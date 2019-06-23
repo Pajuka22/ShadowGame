@@ -269,6 +269,7 @@ void AShadowGameCharacter::MoveRight(float Value)
 	{
 		// add movement in that direction
 		AddMovementInput(GetActorRightVector(), Value);
+		GEngine->AddOnScreenDebugMessage(-1, 0.2f, FColor::Green, "FUCK YOU");
 	}
 }
 
