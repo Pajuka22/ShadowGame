@@ -1,0 +1,98 @@
+// Fill out your copyright notice in the Description page of Project Settings.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "GameFramework/Pawn.h"
+#include "MyPawn.generated.h"
+
+UCLASS()
+class SHADOWGAME_API AMyPawn : public APawn
+{
+	GENERATED_BODY()
+public:
+	// Sets default values for this pawn's properties
+	AMyPawn();
+
+protected:
+	// Called when the game starts or when spawned
+	virtual void BeginPlay() override;
+
+public:
+	// Called every frame
+	virtual void Tick(float DeltaTime) override;
+
+	// Called to bind functionality to input
+	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+
+	UPROPERTY(EditAnywhere)
+		UStaticMeshComponent* VisibleComponent;
+
+	class UCustomMovement* MovementComp;
+	virtual UPawnMovementComponent* GetMovementComponent() const override;
+
+	class UCameraComponent* MyCamera;
+
+	UPROPERTY(EditAnywhere)
+		float SneakSpeed = 200;
+	UPROPERTY(EditAnywhere)
+		float CrouchSpeed = 150;
+	UPROPERTY(EditAnywhere)
+		float NormalSpeed = 300;
+	UPROPERTY(EditAnywhere)
+		float SprintSpeed = 600;
+	UPROPERTY(EditAnywhere)
+		float sneakHeight = 1;
+	UPROPERTY(EditAnywhere)
+		float crouchHeight = 50;
+	UPROPERTY(EditAnywhere)
+		float normalHeight = 100;
+	UPROPERTY(EditAnywhere)
+		float HeightInterpTime;
+	float startHeight;
+	float endHeight;
+	float currentHeight;
+	float addHeight;
+
+	FVector CurrentVelocity;
+	float ForwardVel;
+	float RightVel;
+	float cameraRot;
+	bool ShadowSneak;
+	bool Grounded;
+	bool Jumping;
+	bool EndJump;
+	bool bCrouch;
+	bool bSprint;
+	bool bBufferSprint;
+	bool bBufferEndSprint;
+	FVector LateralMovement = FVector(0, 0, 0);
+	struct Visibility {
+		float Vis;
+		float GroundVis;
+	};
+
+	Visibility  DStealth(FVector angle, float magnitude, float length);
+	Visibility SStealth(FVector spotlight, float inner, float outer, float Attenuation, FVector spotAngle, float lumens);
+	Visibility PStealth(FVector position, float attenuation, float intensity);
+
+	Visibility MyVis;
+	void AddVis(Visibility vis);
+	void SubVis(Visibility vis);
+protected:
+	void MoveForward(float Val);
+	void MoveRight(float Val);
+	void TurnAtRate(float Rate);
+	void LookUpAtRate(float Rate);
+	void StartEndSneak();
+	void Jump();
+	void StopJumping();
+	bool CheckGrounded();
+	void Sprint();
+	void StopSprinting();
+	void CrouchControl();
+	void Crouch();
+	void StopCrouching();
+	void BufferEndCrouch();
+	void GetAddHeight();
+};
