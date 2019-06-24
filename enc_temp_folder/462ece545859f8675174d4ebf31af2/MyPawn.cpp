@@ -324,18 +324,19 @@ AMyPawn::Visibility AMyPawn::PStealth(FVector location, float Attenuation, float
 	FVector End;
 	UCapsuleComponent* Capsule = Cast<UCapsuleComponent>(RootComponent);
 	if (Capsule != nullptr && (GetActorLocation() - location).Size() <= Attenuation) {
-		float capsuleHeight = Capsule->GetScaledCapsuleHalfHeight();
+		float capsuleHeight = currentHeight;
 		float capsuleRadius = Capsule->GetScaledCapsuleRadius();
 		for (float f = -capsuleHeight; f <= capsuleHeight; f += capsuleHeight) {
-			Start = GetActorLocation() + RootComponent->GetUpVector() * f;
+			Start = GetActorLocation() + FVector(0, 0, f);
 			End = location;
-			bool isHit = GetWorld()->LineTraceSingleByChannel(outHit, End, Start, ECC_Visibility, CollisionParams);
+			bool isHit = GetWorld()->LineTraceSingleByChannel(outHit, Start, End, ECC_Visibility, CollisionParams);
 			if (!outHit.bBlockingHit) {
 				mult += 0.2;
 			}
 			if (f == -capsuleHeight) {
 				ReturnVis.GroundVis = outHit.bBlockingHit ? 0 : 0.2 * (lumens * 10000 / (4 * PI * FMath::Pow((GetActorLocation() - location).Size(), 2)));
-				DrawDebugLine(GetWorld(), Start, End, FColor::Green, false, 1, 0, 1);
+				//DrawDebugLine(GetWorld(), End, Start, FColor::Green, false, 1, 0, 1);
+				//GEngine->AddOnScreenDebugMessage(-1, 0.2f, FColor::Green, outHit.bBlockingHit ? "true" : "false");
 			}
 		}
 		for (float f = -capsuleRadius; f <= capsuleRadius; f += 2 * capsuleRadius) {
@@ -345,7 +346,7 @@ AMyPawn::Visibility AMyPawn::PStealth(FVector location, float Attenuation, float
 			if (!outHit.bBlockingHit) {
 				mult += 0.2;
 			}
-			//DrawDebugLine(GetWorld(), outHit.ImpactPoint, End, FColor::Green, false, 1, 0, 1);
+			//DrawDebugLine(GetWorld(), Start, End, FColor::Green, false, 1, 0, 1);
 		}
 		//for the top bottom, left, right, and center of the player, do a line check. If there's something in the way subtract 0.2 from the multiplier cuz 5 points
 		//if there's nothing in the don't do anything.
@@ -354,7 +355,7 @@ AMyPawn::Visibility AMyPawn::PStealth(FVector location, float Attenuation, float
 		mult = 0;
 		ReturnVis.GroundVis = 0;
 	}
-	//GEngine->AddOnScreenDebugMessage(-1, 0.2f, FColor::Green, FString::SanitizeFloat(mult));
+	GEngine->AddOnScreenDebugMessage(-1, 0.2f, FColor::Green, FString::SanitizeFloat(mult));
 	ReturnVis.Vis = (lumens * 10000 / (4 * PI * FMath::Pow((GetActorLocation() - location).Size(), 2))) * mult;
 	return ReturnVis;
 }
