@@ -87,7 +87,7 @@ void AMyPawn::Tick(float DeltaTime)
 	//GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Green, GetActorLocation().ToString());
 	//GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Red, ShadowSneak ? "true" : "false");
 	//GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Green, bCrouch ? "true" : "false");
-	//GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Blue, bSprint ? "true" : "false");
+	//GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Blue, bSprint ? "true" : "false");34eregerergrerrfwefwefwerfwerfwerwerfwerwerwerwerweerwerwerwerwerwerwerwerwerwerwerwerwerwerwerwerwerwerwerwerfwerfwerfwerfwerfwerffwerwerwerwrfwerwerwerwerwerwerwerwerwerwerffffffffasdfasdfasdfasdf
 	//GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Yellow, FString::SanitizeFloat(endHeight));
 	GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Red, FString::SanitizeFloat(FMath::Sqrt(MyVis.GroundVis)));
 	GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Red, FString::SanitizeFloat(FMath::Sqrt(MyVis.Vis)));
@@ -314,7 +314,7 @@ bool AMyPawn::CheckGrounded() {
 void AMyPawn::GetAddHeight() {
 	addHeight = (endHeight - startHeight) / HeightInterpTime;
 }
-AMyPawn::Visibility AMyPawn::PStealth(FVector location, float Attenuation, float lumens) {
+AMyPawn::Visibility AMyPawn::PStealth(FVector location, float Attenuation, float candelas) {
 	float mult = 0;
 	Visibility ReturnVis;
 	FHitResult outHit;
@@ -332,10 +332,10 @@ AMyPawn::Visibility AMyPawn::PStealth(FVector location, float Attenuation, float
 			bool isHit = GetWorld()->LineTraceSingleByChannel(outHit, End, Start, ECC_Visibility, CollisionParams);
 			if (!outHit.bBlockingHit) {
 				mult += 0.2;
-			}
-			if (f == -capsuleHeight) {
-				ReturnVis.GroundVis = outHit.bBlockingHit ? 0 : 0.2 * (lumens * 10000 / (4 * PI * FMath::Pow((GetActorLocation() - location).Size(), 2)));
-				DrawDebugLine(GetWorld(), Start, End, FColor::Green, false, 1, 0, 1);
+				if (f == -capsuleHeight) {
+					ReturnVis.GroundVis = 0.2 * candelas * 10000/ (FMath::Pow((Start - End).Size(), 2));
+					DrawDebugLine(GetWorld(), Start, End, FColor::Green, false, 1, 0, 1);
+				}
 			}
 		}
 		for (float f = -capsuleRadius; f <= capsuleRadius; f += 2 * capsuleRadius) {
@@ -355,14 +355,15 @@ AMyPawn::Visibility AMyPawn::PStealth(FVector location, float Attenuation, float
 		ReturnVis.GroundVis = 0;
 	}
 	//GEngine->AddOnScreenDebugMessage(-1, 0.2f, FColor::Green, FString::SanitizeFloat(mult));
-	ReturnVis.Vis = (lumens * 10000 / (4 * PI * FMath::Pow((GetActorLocation() - location).Size(), 2))) * mult;
+	ReturnVis.Vis = (2 * PI * (1 - FMath::Cos(PI)) * candelas * 10000) / (4 * PI * FMath::Pow((Start - End).Size(), 2)) * mult;
 	return ReturnVis;
 }
-AMyPawn::Visibility AMyPawn::SStealth(FVector Spotlight, float inner, float outer, float Attenuation, FVector SpotAngle, float lumens) {
+AMyPawn::Visibility AMyPawn::SStealth(FVector Spotlight, float inner, float outer, float Attenuation, FVector SpotAngle, float candelas) {
 	Visibility ReturnVis;
 	float mult = 0;
 	float angle;
 	FVector End;
+	FVector Start = Spotlight;
 	FHitResult outHit;
 	FCollisionQueryParams params;
 	params.AddIgnoredActor(this);
@@ -376,16 +377,12 @@ AMyPawn::Visibility AMyPawn::SStealth(FVector Spotlight, float inner, float oute
 			GetWorld()->LineTraceSingleByChannel(outHit, Spotlight, End, ECC_Visibility, params);
 			if (!outHit.bBlockingHit && angle <= outer && (End - Spotlight).Size() < Attenuation) {
 				if (angle <= inner) {
-					mult = 0.2;
+					mult += 0.2;
 				}
 				else {
-					mult = (outer - angle) / (outer - inner) * 0.2;
+					mult += (outer - angle) / (outer - inner) * 0.2;
 				}
 			}
-			else {
-				mult = 0;
-			}
-			ReturnVis.Vis += (lumens * 10000 / (4 * PI * FMath::Pow((GetActorLocation() - Spotlight).Size(), 2))) * mult * 360 / inner;
 		}
 		for (float f = -halfHeight; f < radius; f += 2 * halfHeight) {
 			End = GetActorLocation() + GetActorUpVector() * f;
@@ -393,20 +390,18 @@ AMyPawn::Visibility AMyPawn::SStealth(FVector Spotlight, float inner, float oute
 			GetWorld()->LineTraceSingleByChannel(outHit, Spotlight, End, ECC_Visibility, params);
 			if (!outHit.bBlockingHit && angle <= outer && (End - Spotlight).Size() < Attenuation) {
 				if (angle <= inner) {
-					mult = 0.2;
+					mult += 0.2;
 				}
 				else {
-					mult = (outer - angle) / (outer - inner) * 0.2;
+					mult += (outer - angle) / (outer - inner) * 0.2;
+				}
+				if (f == -halfHeight) {
+					ReturnVis.GroundVis = (angle <= inner ? 0.2 : (outer - angle) / (outer - inner) * 0.2) *
+						(2 * PI * FMath::Cos(inner * PI / 180) * candelas * 10000)/FMath::Pow((Start - End).Size(), 2);
 				}
 			}
-			else {
-				mult = 0;
-			}
-			if (f == -halfHeight) {
-				ReturnVis.GroundVis = (lumens * 10000 / (4 * PI * FMath::Pow((GetActorLocation() - Spotlight).Size(), 2))) * mult * 360 / inner;
-			}
-			ReturnVis.Vis += (lumens * 10000 / (4 * PI * FMath::Pow((GetActorLocation() - Spotlight).Size(), 2))) * mult * 360 / inner;
 		}
+		ReturnVis.Vis = mult * (2 * PI * FMath::Cos(inner * PI / 180) * candelas * 10000) / FMath::Pow((Start - End).Size(), 2);
 	}
 	else {
 		ReturnVis.Vis = 0;

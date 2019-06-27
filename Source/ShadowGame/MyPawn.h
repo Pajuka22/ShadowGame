@@ -73,8 +73,8 @@ public:
 	};
 
 	Visibility  DStealth(FVector angle, float magnitude, float length);
-	Visibility SStealth(FVector spotlight, float inner, float outer, float Attenuation, FVector spotAngle, float lumens);
-	Visibility PStealth(FVector position, float attenuation, float intensity);
+	Visibility SStealth(FVector spotlight, float inner, float outer, float Attenuation, FVector spotAngle, float Candelas);
+	Visibility PStealth(FVector position, float attenuation, float Candelas);
 
 	Visibility MyVis;
 	void AddVis(Visibility vis);
