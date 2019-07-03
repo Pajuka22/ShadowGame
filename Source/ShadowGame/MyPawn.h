@@ -27,8 +27,8 @@ public:
 
 	UPROPERTY(EditAnywhere)
 		UStaticMeshComponent* VisibleComponent;
-
-	class UCustomMovement* MovementComp;
+	UPROPERTY(EditAnywhere)
+		class UCustomMovement* MovementComp;
 	virtual UPawnMovementComponent* GetMovementComponent() const override;
 
 	class UCameraComponent* MyCamera;
@@ -49,6 +49,11 @@ public:
 		float normalHeight = 100;
 	UPROPERTY(EditAnywhere)
 		float HeightInterpTime;
+	UPROPERTY(EditAnywhere)
+		float SneakThreshold;
+	UPROPERTY(EditAnywhere, meta = (ClampMin = "1", ClampMax = "100"))
+		float NormalRadius = 50;
+	float JumpSpeed = 1000;
 	float startHeight;
 	float endHeight;
 	float currentHeight;
@@ -66,6 +71,7 @@ public:
 	bool bSprint;
 	bool bBufferSprint;
 	bool bBufferEndSprint;
+	FVector JumpVect;
 	FVector LateralMovement = FVector(0, 0, 0);
 	struct Visibility {
 		float Vis;

@@ -21,15 +21,17 @@ AMyPawn::AMyPawn()
 	PrimaryActorTick.bCanEverTick = true;
 
 	UCapsuleComponent* Capsule = CreateDefaultSubobject<UCapsuleComponent>(TEXT("Root Comp"));
-	RootComponent = Capsule;
 	Capsule->SetCollisionProfileName(TEXT("Pawn"));
+	Capsule->SetCapsuleHalfHeight(normalHeight);
+	Capsule->SetCapsuleRadius(NormalRadius);
+	RootComponent = Capsule;
 
 	VisibleComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));
 	VisibleComponent->SetupAttachment(RootComponent);
 
 	MyCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
 	MyCamera->SetupAttachment(RootComponent);
-	MyCamera->SetRelativeLocation(FVector(0, 0, 50));
+	MyCamera->SetRelativeLocation(FVector(0, 0, 90));
 	MyCamera->SetRelativeRotation(FRotator(0, 0, 0));
 
 
@@ -51,6 +53,8 @@ AMyPawn::AMyPawn()
 
 	MyVis.Vis = 0;
 	MyVis.GroundVis = 0;
+
+	JumpVect = FVector(0, 0, 750);
 }
 
 // Called when the game starts or when spawned
@@ -67,7 +71,7 @@ void AMyPawn::Tick(float DeltaTime)
 	/*if (!CurrentVelocity.IsZero()) {
 		SetActorLocation(GetActorLocation() + CurrentVelocity * DeltaTime);
 	}*/
-
+	JumpVect = JumpSpeed * RootComponent->GetUpVector();
 	MovementComp->Velocity = FVector();
 	SetActorRotation(GetActorRotation() + FRotator(0, 0, 0));
 	//DrawDebugLine(GetWorld(), GetActorLocation(), GetActorLocation() + 100 * RootComponent->GetUpVector(), FColor::Red, false, 5.f, 0, 1);
@@ -82,15 +86,12 @@ void AMyPawn::Tick(float DeltaTime)
 	if (bBufferSprint) {
 		Sprint();
 	}
-	//GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Yellow, CheckGrounded() ? "true" : "false");
-	//GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Red, FString::SanitizeFloat(currentHeight));
-	//GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Green, GetActorLocation().ToString());
-	//GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Red, ShadowSneak ? "true" : "false");
-	//GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Green, bCrouch ? "true" : "false");
-	//GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Blue, bSprint ? "true" : "false");34eregerergrerrfwefwefwerfwerfwerwerfwerwerwerwerweerwerwerwerwerwerwerwerwerwerwerwerwerwerwerwerwerwerwerwerfwerfwerfwerfwerfwerffwerwerwerwrfwerwerwerwerwerwerwerwerwerwerffffffffasdfasdfasdfasdf
-	//GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Yellow, FString::SanitizeFloat(endHeight));
+	GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Blue, FString::SanitizeFloat(Cast<UCapsuleComponent>(RootComponent)->GetScaledCapsuleHalfHeight()));
+	GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Blue, FString::SanitizeFloat(Cast<UCapsuleComponent>(RootComponent)->GetScaledCapsuleRadius()));
+	GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Blue, FString::SanitizeFloat(currentHeight));
 	GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Red, FString::SanitizeFloat(FMath::Sqrt(MyVis.GroundVis)));
 	GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Red, FString::SanitizeFloat(FMath::Sqrt(MyVis.Vis)));
+	GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Yellow, CheckGrounded() ? "true" : "false");
 	UCapsuleComponent* Capsule = Cast<UCapsuleComponent>(RootComponent);
 	if (Capsule != nullptr && currentHeight != endHeight) {
 		currentHeight += addHeight * DeltaTime;
@@ -98,10 +99,12 @@ void AMyPawn::Tick(float DeltaTime)
 			currentHeight = endHeight;
 			addHeight = 0;
 		}
-		else {
-			Capsule->SetCapsuleHalfHeight(currentHeight);
-			MyCamera->SetRelativeLocation(FVector(0, 0, currentHeight / 2));
+		MyCamera->SetRelativeLocation(FVector(0, 0, currentHeight));
+		Capsule->SetCapsuleRadius(NormalRadius);
+		if (Capsule->GetScaledCapsuleRadius() > currentHeight) {
+			Capsule->SetCapsuleRadius(currentHeight);
 		}
+		Capsule->SetCapsuleHalfHeight(currentHeight);
 		RootComponent = Capsule;
 		MovementComp->AddInputVector(RootComponent->GetUpVector() * addHeight);
 	}
@@ -129,7 +132,7 @@ void AMyPawn::Tick(float DeltaTime)
 	if (ShadowSneak) {
 		FHitResult hitResultTrace;
 		FCollisionQueryParams queryParams;
-
+		
 		queryParams.AddIgnoredActor(this);
 
 		FVector under;
@@ -139,7 +142,7 @@ void AMyPawn::Tick(float DeltaTime)
 			ECC_Visibility, queryParams))
 		{
 			if (hitResultTrace.GetComponent() != nullptr) {
-				if (!hitResultTrace.GetActor()->IsRootComponentMovable()) {
+				if (hitResultTrace.Component->Mobility != EComponentMobility::Movable){//!hitResultTrace.GetActor()->IsRootComponentMovable()) {
 					under = hitResultTrace.ImpactPoint;
 					FVector newUp = hitResultTrace.ImpactNormal;
 					FVector newForward = FVector::CrossProduct(RootComponent->GetRightVector(), newUp);
@@ -227,31 +230,54 @@ void AMyPawn::LookUpAtRate(float rate) {
 	//MyCamera->SetRelativeRotation(FRotator(FMath::ClampAngle(MyCamera->RelativeRotation.Pitch - 5 * rate, -90, 90), MyCamera->RelativeRotation.Yaw, MyCamera->RelativeRotation.Roll));
 }
 void AMyPawn::StartEndSneak() {
+	FHitResult outHit;
+	FCollisionQueryParams params;
+	params.AddIgnoredActor(this);
 	ShadowSneak = !ShadowSneak;
 	bCrouch = false;
 	startHeight = currentHeight;
 	if (ShadowSneak) {
-		endHeight = sneakHeight;
-		StopSprinting();
+		if (FMath::Sqrt(MyVis.GroundVis) <= SneakThreshold) {
+			endHeight = sneakHeight;
+			StopSprinting();
+		}
+		else {
+			ShadowSneak = false;
+		}
 	}
 	else {
 		endHeight = bCrouch ? crouchHeight : normalHeight;
+		GetWorld()->LineTraceSingleByChannel(outHit, GetActorLocation(),
+			GetActorLocation() + RootComponent->GetUpVector() * (normalHeight + (endHeight - currentHeight)), ECC_Visibility, params);
+		endHeight = outHit.bBlockingHit ? currentHeight : endHeight;
 	}
 	GetAddHeight();
 	MovementComp->Shadow = ShadowSneak;
 }
 void AMyPawn::Sprint() {
+	FHitResult outHit;
+	FCollisionQueryParams params;
+	params.AddIgnoredActor(this);
 	if (CheckGrounded()) {
-		bBufferSprint = false;
-		bSprint = true;
 		startHeight = currentHeight;
 		endHeight = normalHeight;
-		GetAddHeight();
-		if (ShadowSneak) {
-			StartEndSneak();
+
+		GetWorld()->LineTraceSingleByChannel(outHit, GetActorLocation(),
+			GetActorLocation() + RootComponent->GetUpVector() * (normalHeight + (normalHeight - currentHeight)), ECC_Visibility, params);
+		if (!outHit.bBlockingHit) {
+			bBufferSprint = false;
+			bSprint = true;
+			GetAddHeight();
+			if (ShadowSneak) {
+				StartEndSneak();
+			}
+			if (bCrouch) {
+				StopCrouching();
+			}
 		}
-		if (bCrouch) {
-			StopCrouching();
+		else {
+			endHeight = currentHeight;
+			bBufferSprint = true;
 		}
 	}
 	else {
@@ -279,17 +305,24 @@ void AMyPawn::Crouch() {
 	GetAddHeight();
 }
 void AMyPawn::StopCrouching() {
-	bCrouch = false;
 	if (ShadowSneak) {
 		StartEndSneak();
 	}
 	startHeight = currentHeight;
-	endHeight = ShadowSneak ? sneakHeight : normalHeight;
-	GetAddHeight();
+	FHitResult outHit;
+	FCollisionQueryParams params;
+	params.AddIgnoredActor(this);
+	GetWorld()->LineTraceSingleByChannel(outHit, GetActorLocation(),
+		GetActorLocation() + RootComponent->GetUpVector() * (normalHeight + (normalHeight - currentHeight)), ECC_Visibility, params);
+	if (!outHit.bBlockingHit || ShadowSneak) {
+		endHeight = ShadowSneak ? sneakHeight : normalHeight;
+		GetAddHeight();
+		bCrouch = false;
+	}
 }
 void AMyPawn::Jump() {
 	if (CheckGrounded()) {
-		MovementComp->JumpVel += RootComponent->GetUpVector() * 1000;
+		MovementComp->Jump();
 		if (ShadowSneak) {
 			StartEndSneak();
 		}
@@ -329,18 +362,19 @@ AMyPawn::Visibility AMyPawn::PStealth(FVector location, float Attenuation, float
 		for (float f = -capsuleHeight; f <= capsuleHeight; f += capsuleHeight) {
 			Start = GetActorLocation() + RootComponent->GetUpVector() * f;
 			End = location;
+			DrawDebugLine(GetWorld(), Start, End, FColor::Green, false, 1, 0, 1);
 			bool isHit = GetWorld()->LineTraceSingleByChannel(outHit, End, Start, ECC_Visibility, CollisionParams);
 			if (!outHit.bBlockingHit) {
 				mult += 0.2;
 				if (f == -capsuleHeight) {
-					ReturnVis.GroundVis = 0.2 * candelas * 10000/ (FMath::Pow((Start - End).Size(), 2));
-					DrawDebugLine(GetWorld(), Start, End, FColor::Green, false, 1, 0, 1);
+					ReturnVis.GroundVis = candelas * 10000/ (FMath::Pow((Start - End).Size(), 2));
 				}
 			}
 		}
 		for (float f = -capsuleRadius; f <= capsuleRadius; f += 2 * capsuleRadius) {
 			Start = RootComponent->GetRightVector() * f + GetActorLocation();
 			End = location;
+			DrawDebugLine(GetWorld(), Start, End, FColor::Green, false, 1, 0, 1);
 			bool isHit = GetWorld()->LineTraceSingleByChannel(outHit, Start, End, ECC_Visibility, CollisionParams);
 			if (!outHit.bBlockingHit) {
 				mult += 0.2;
@@ -396,7 +430,7 @@ AMyPawn::Visibility AMyPawn::SStealth(FVector Spotlight, float inner, float oute
 					mult += (outer - angle) / (outer - inner) * 0.2;
 				}
 				if (f == -halfHeight) {
-					ReturnVis.GroundVis = (angle <= inner ? 0.2 : (outer - angle) / (outer - inner) * 0.2) *
+					ReturnVis.GroundVis = (angle <= inner ? 1 : (outer - angle) / (outer - inner)) *
 						(2 * PI * FMath::Cos(inner * PI / 180) * candelas * 10000)/FMath::Pow((Start - End).Size(), 2);
 				}
 			}
@@ -436,7 +470,7 @@ AMyPawn::Visibility AMyPawn::DStealth(FVector Direction, float intensity, float 
 			if (!OutHit.bBlockingHit) {
 				mult += 0.2;
 				if (j == -HalfHeight) {
-					ReturnVis.GroundVis = FMath::Square(0.2 * intensity);
+					ReturnVis.GroundVis = FMath::Square(intensity);
 				}
 			}
 		}

@@ -22,7 +22,7 @@ void UCustomMovement::TickComponent(float DeltaTime, enum ELevelTick TickType, F
 	FVector Start = GetActorLocation();
 	FVector End = GetActorLocation() + UpdatedComponent->GetUpVector() * -100;
 	UCapsuleComponent * capsule = Cast<UCapsuleComponent>(UpdatedComponent);
-	if (capsule != nullptr) {
+	if (capsule != nullptr) {	
 		End = GetActorLocation() + UpdatedComponent->GetUpVector() * -1.25 * capsule->GetScaledCapsuleHalfHeight();
 
 	}
@@ -44,4 +44,8 @@ void UCustomMovement::TickComponent(float DeltaTime, enum ELevelTick TickType, F
 			SlideAlongSurface(DesiredMovementThisFrame, 1.f - outHit.Time, outHit.Normal, outHit);
 		}
 	}
-};
+}
+void UCustomMovement::Jump() {
+	JumpVel += UpdatedComponent->GetUpVector()* JumpSpeed;
+}
+;

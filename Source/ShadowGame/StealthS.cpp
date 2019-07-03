@@ -13,7 +13,7 @@ AStealthS::AStealthS()
 	PrimaryActorTick.bCanEverTick = true;
 	Source = CreateDefaultSubobject<USpotLightComponent>(TEXT("Source"));
 	Source->IntensityUnits = ELightUnits::Candelas;
-	Source->Intensity = 5000;
+	Source->Intensity = 500;
 }
 
 // Called when the game starts or when spawned
