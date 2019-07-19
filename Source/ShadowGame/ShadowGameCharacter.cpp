@@ -10,7 +10,10 @@
 #include "HeadMountedDisplayFunctionLibrary.h"
 #include "Kismet/GameplayStatics.h"
 #include "MotionControllerComponent.h"
+#include "Runtime/Engine/Public/DrawDebugHelpers.h"
 #include "XRMotionControllerBase.h" // for FXRMotionControllerBase::RightHandSourceId
+#include "Runtime/Engine/Classes/GameFramework/CharacterMovementComponent.h"
+
 
 DEFINE_LOG_CATEGORY_STATIC(LogFPChar, Warning, All);
 
@@ -20,6 +23,7 @@ DEFINE_LOG_CATEGORY_STATIC(LogFPChar, Warning, All);
 AShadowGameCharacter::AShadowGameCharacter()
 {
 	// Set size for collision capsule
+	AutoPossessPlayer = EAutoReceiveInput::Player0;
 	GetCapsuleComponent()->InitCapsuleSize(55.f, 96.0f);
 
 	// set our turn rates for input
@@ -28,9 +32,9 @@ AShadowGameCharacter::AShadowGameCharacter()
 
 	// Create a CameraComponent	
 	FirstPersonCameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("FirstPersonCamera"));
-	FirstPersonCameraComponent->SetupAttachment(GetCapsuleComponent());
+	FirstPersonCameraComponent->SetupAttachment(RootComponent);
 	FirstPersonCameraComponent->RelativeLocation = FVector(-39.56f, 1.75f, 64.f); // Position the camera
-	FirstPersonCameraComponent->bUsePawnControlRotation = true;
+	//FirstPersonCameraComponent->bUsePawnControlRotation = false;
 
 	// Create a mesh component that will be used when being viewed from a '1st person' view (when controlling this pawn)
 	Mesh1P = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("CharacterMesh1P"));
@@ -80,6 +84,10 @@ AShadowGameCharacter::AShadowGameCharacter()
 	VR_MuzzleLocation->SetRelativeLocation(FVector(0.000004, 53.999992, 10.000000));
 	VR_MuzzleLocation->SetRelativeRotation(FRotator(0.0f, 90.0f, 0.0f));		// Counteract the rotation of the VR gun model.
 
+	UCharacterMovementComponent* Movement = Cast<UCharacterMovementComponent>(GetMovementComponent());
+	if (Movement != nullptr) {
+		Movement->SetWalkableFloorAngle(45);
+	}
 	// Uncomment the following line to turn motion controllers on by default:
 	//bUsingMotionControllers = true;
 }
@@ -103,6 +111,43 @@ void AShadowGameCharacter::BeginPlay()
 		VR_Gun->SetHiddenInGame(true, true);
 		Mesh1P->SetHiddenInGame(false, true);
 	}
+}
+void AShadowGameCharacter::Tick(float DeltaTime)
+{
+	FHitResult hitResultTrace;
+	FCollisionQueryParams queryParams;
+
+	queryParams.AddIgnoredActor(this);
+
+	FVector under;
+	FVector Start = GetActorLocation();
+	FVector End = Start + GetVelocity();
+	if (GetWorld()->LineTraceSingleByChannel(hitResultTrace, GetActorLocation(), GetActorLocation() - RootComponent->GetUpVector() * 120,
+		ECC_Visibility, queryParams))
+	{
+		if (hitResultTrace.GetComponent() != nullptr) {
+			GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Green, "FUCK YOU");
+			if (hitResultTrace.Component->Mobility != EComponentMobility::Movable) {//!hitResultTrace.GetActor()->IsRootComponentMovable()) {
+				under = hitResultTrace.ImpactPoint;
+				FVector newUp = hitResultTrace.ImpactNormal;
+				FVector newForward = FVector::CrossProduct(RootComponent->GetRightVector(), newUp);
+				FVector newRight = FVector::CrossProduct(newUp, newForward);
+				//Build the new transform!
+				FTransform newTransform = FTransform(newForward, newRight, newUp, GetActorLocation());
+				RootComponent->SetWorldRotation(FMath::Lerp(RootComponent->GetComponentRotation().Quaternion(), newTransform.GetRotation(), .05));
+			}
+		}
+		else {
+			under = hitResultTrace.ImpactPoint;
+			FVector newUp = FVector(0, 0, 1);
+			FVector newForward = FVector::CrossProduct(RootComponent->GetRightVector(), newUp);
+			FVector newRight = FVector::CrossProduct(newUp, newForward);
+			//Build the new transform!
+			FTransform newTransform = FTransform(newForward, newRight, newUp, GetActorLocation());
+			RootComponent->SetWorldRotation(FMath::Lerp(RootComponent->GetComponentRotation().Quaternion(), newTransform.GetRotation(), .05));
+		}
+	}
+	DrawDebugLine(GetWorld(), GetActorLocation(), GetActorLocation() + 100 * RootComponent->GetUpVector(), FColor::Red, false, 5.f, 0, 1);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -132,9 +177,9 @@ void AShadowGameCharacter::SetupPlayerInputComponent(class UInputComponent* Play
 	// We have 2 versions of the rotation bindings to handle different kinds of devices differently
 	// "turn" handles devices that provide an absolute delta, such as a mouse.
 	// "turnrate" is for devices that we choose to treat as a rate of change, such as an analog joystick
-	PlayerInputComponent->BindAxis("Turn", this, &APawn::AddControllerYawInput);
+	PlayerInputComponent->BindAxis("Turn", this, &AShadowGameCharacter::TurnAtRate);
 	PlayerInputComponent->BindAxis("TurnRate", this, &AShadowGameCharacter::TurnAtRate);
-	PlayerInputComponent->BindAxis("LookUp", this, &APawn::AddControllerPitchInput);
+	PlayerInputComponent->BindAxis("LookUp", this, &AShadowGameCharacter::LookUpAtRate);
 	PlayerInputComponent->BindAxis("LookUpRate", this, &AShadowGameCharacter::LookUpAtRate);
 }
 
@@ -269,20 +314,31 @@ void AShadowGameCharacter::MoveRight(float Value)
 	{
 		// add movement in that direction
 		AddMovementInput(GetActorRightVector(), Value);
-		GEngine->AddOnScreenDebugMessage(-1, 0.2f, FColor::Green, "FUCK YOU");
 	}
 }
 
 void AShadowGameCharacter::TurnAtRate(float Rate)
 {
-	// calculate delta for this frame from the rate information
-	AddControllerYawInput(Rate * BaseTurnRate * GetWorld()->GetDeltaSeconds());
+	FVector newRight = RootComponent->GetRightVector().RotateAngleAxis(5 * Rate, RootComponent->GetUpVector());
+	FVector newForward = RootComponent->GetForwardVector().RotateAngleAxis(5 * Rate, RootComponent->GetUpVector());
+	RootComponent->SetWorldTransform(FTransform(newForward, newRight, RootComponent->GetUpVector(), GetActorLocation()));
+	GEngine->AddOnScreenDebugMessage(-1, 0.2f, FColor::Red, RootComponent->GetForwardVector().ToString());
 }
 
 void AShadowGameCharacter::LookUpAtRate(float Rate)
 {
-	// calculate delta for this frame from the rate information
-	AddControllerPitchInput(Rate * BaseLookUpRate * GetWorld()->GetDeltaSeconds());
+	float addrot = 5 * Rate;
+
+	if (FMath::Acos(FVector::DotProduct(FirstPersonCameraComponent ->GetForwardVector(), RootComponent->GetUpVector())) < FMath::Abs(5 * Rate * PI / 180) && addrot < 0) {
+		addrot = FMath::Acos(FVector::DotProduct(FirstPersonCameraComponent ->GetForwardVector(), RootComponent->GetUpVector()));
+	}
+	if (FMath::Acos(FVector::DotProduct(FirstPersonCameraComponent ->GetForwardVector(), RootComponent->GetUpVector() * -1)) < FMath::Abs(5 * Rate * PI / 180) && addrot > 0) {
+		addrot = FMath::Acos(FVector::DotProduct(FirstPersonCameraComponent ->GetForwardVector(), -RootComponent->GetUpVector()));
+	}
+	//start standard working.
+	FVector newUp = FirstPersonCameraComponent ->GetUpVector().RotateAngleAxis(addrot, FirstPersonCameraComponent ->GetRightVector());
+	FVector newForward = FirstPersonCameraComponent ->GetForwardVector().RotateAngleAxis(addrot, FirstPersonCameraComponent ->GetRightVector());
+	FirstPersonCameraComponent ->SetWorldTransform(FTransform(newForward, FirstPersonCameraComponent ->GetRightVector(), newUp, FirstPersonCameraComponent ->GetComponentLocation()));
 }
 
 bool AShadowGameCharacter::EnableTouchscreenMovement(class UInputComponent* PlayerInputComponent)
@@ -298,4 +354,8 @@ bool AShadowGameCharacter::EnableTouchscreenMovement(class UInputComponent* Play
 	}
 	
 	return false;
+}
+
+void AShadowGameCharacter::Jump() {
+
 }

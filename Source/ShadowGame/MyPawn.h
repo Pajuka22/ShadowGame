@@ -85,6 +85,15 @@ public:
 	Visibility MyVis;
 	void AddVis(Visibility vis);
 	void SubVis(Visibility vis);
+	float GetCapsuleVisibleArea();
+
+	enum Heights {
+		Stand,
+		Crouch,
+		Sneak
+	};
+	Heights LastHeight = Heights::Stand;
+
 protected:
 	void MoveForward(float Val);
 	void MoveRight(float Val);
@@ -101,4 +110,5 @@ protected:
 	void StopCrouching();
 	void BufferEndCrouch();
 	void GetAddHeight();
+	void RootCollision(class UPrimitiveComponent* HitComponent, class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 };
