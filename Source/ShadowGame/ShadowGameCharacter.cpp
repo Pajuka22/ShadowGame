@@ -118,7 +118,7 @@ void AShadowGameCharacter::Tick(float DeltaTime)
 	FCollisionQueryParams queryParams;
 
 	queryParams.AddIgnoredActor(this);
-
+	
 	FVector under;
 	FVector Start = GetActorLocation();
 	FVector End = Start + GetVelocity();
@@ -322,7 +322,12 @@ void AShadowGameCharacter::TurnAtRate(float Rate)
 	FVector newRight = RootComponent->GetRightVector().RotateAngleAxis(5 * Rate, RootComponent->GetUpVector());
 	FVector newForward = RootComponent->GetForwardVector().RotateAngleAxis(5 * Rate, RootComponent->GetUpVector());
 	RootComponent->SetWorldTransform(FTransform(newForward, newRight, RootComponent->GetUpVector(), GetActorLocation()));
-	GEngine->AddOnScreenDebugMessage(-1, 0.2f, FColor::Red, RootComponent->GetForwardVector().ToString());
+	FRotator Rot = FTransform(newForward, newRight, RootComponent->GetUpVector(), GetActorLocation()).GetRotation().Rotator();
+	FRotator MyRot = FTransform(RootComponent->GetForwardVector(), RootComponent->GetRightVector(), RootComponent->GetUpVector(), GetActorLocation()).GetRotation().Rotator();
+	//AddControllerPitchInput(Rot.Pitch - MyRot.Pitch);
+	AddControllerYawInput(Rot.Yaw - MyRot.Yaw);
+	//AddControllerRollInput(Rot.Roll - MyRot.Roll);
+	GEngine->AddOnScreenDebugMessage(-1, 0.2f, FColor::Red, Rot.ToString());
 }
 
 void AShadowGameCharacter::LookUpAtRate(float Rate)

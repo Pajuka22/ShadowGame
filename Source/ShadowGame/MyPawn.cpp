@@ -75,6 +75,7 @@ void AMyPawn::Tick(float DeltaTime)
 	/*if (!CurrentVelocity.IsZero()) {
 		SetActorLocation(GetActorLocation() + CurrentVelocity * DeltaTime);
 	}*/
+	MovementComp->GroundNum = Grounded;
 	JumpVect = JumpSpeed * RootComponent->GetUpVector();
 	MovementComp->Velocity = FVector();
 	SetActorRotation(GetActorRotation() + FRotator(0, 0, 0));
@@ -82,18 +83,18 @@ void AMyPawn::Tick(float DeltaTime)
 	if (bBufferSprint) {
 		Sprint();
 	}
-	GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Blue, FString::SanitizeFloat(Cast<UCapsuleComponent>(RootComponent)->GetScaledCapsuleHalfHeight()));
-	GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Blue, FString::SanitizeFloat(Cast<UCapsuleComponent>(RootComponent)->GetScaledCapsuleRadius()));
-	GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Blue, FString::SanitizeFloat(currentHeight));
 	GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Red, FString::SanitizeFloat(FMath::Sqrt(MyVis.GroundVis)));
 	GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Red, FString::SanitizeFloat(FMath::Sqrt(MyVis.Vis)));
+	GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Orange, CheckGrounded() ? "true" : "false");
 
 	UCapsuleComponent* Capsule = Cast<UCapsuleComponent>(RootComponent);
+	MovementComp->AddInputVector(RootComponent->GetUpVector() * (addHeight < 0 ? addHeight : 0));
 	if (Capsule != nullptr && currentHeight != endHeight) {
 		currentHeight += addHeight * DeltaTime;
 		if (currentHeight == endHeight || addHeight > 0 ? currentHeight + addHeight * DeltaTime > endHeight : currentHeight + addHeight * DeltaTime < endHeight) {
 			currentHeight = endHeight;
 			addHeight = 0;
+
 		}
 		MyCamera->SetRelativeLocation(FVector(0, 0, currentHeight));
 		Capsule->SetCapsuleRadius(NormalRadius);
@@ -102,7 +103,6 @@ void AMyPawn::Tick(float DeltaTime)
 		}
 		Capsule->SetCapsuleHalfHeight(currentHeight);
 		RootComponent = Capsule;
-		MovementComp->AddInputVector(RootComponent->GetUpVector() * (addHeight < 0 ? addHeight : 0));
 	}
 	if (Cast<UCustomMovement>(MovementComp) && CheckGrounded()) {
 		if (ShadowSneak) {
@@ -176,6 +176,7 @@ void AMyPawn::Tick(float DeltaTime)
 			RootComponent->SetWorldRotation(FMath::Lerp(RootComponent->GetComponentRotation().Quaternion(), newTransform.GetRotation(), .05));
 		}
 	}
+	Grounded = 0;
 }
 
 // Called to bind functionality to input
@@ -316,6 +317,7 @@ void AMyPawn::StartEndSneak() {
 	FCollisionQueryParams params;
 	params.AddIgnoredActor(this);
 	ShadowSneak = !ShadowSneak;
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, CheckGrounded() ? "true" : "false");
 	if (!CheckGrounded()) {
 		ShadowSneak = false;
 	}
@@ -348,10 +350,13 @@ void AMyPawn::RootCollision(class UPrimitiveComponent* HitComp, class AActor* Ot
 
 		}
 	}
-	GEngine->AddOnScreenDebugMessage(-1, 1 / 60, FColor::Green, RootComponent->GetComponentLocation().ToString());
-	GEngine->AddOnScreenDebugMessage(-1, 1 / 60, FColor::Green, FVector(SweepResult.Location.Y, SweepResult.Location.Z, SweepResult.Location.X).ToString());
-	GEngine->AddOnScreenDebugMessage(-1, 1 / 60, FColor::Red, SweepResult.ImpactNormal.ToString());
-	DrawDebugLine(GetWorld(), GetActorLocation(), FVector(SweepResult.Location.Y, SweepResult.Location.Z, SweepResult.Location.X), FColor::Green, false, 1, 0, 1);
+	/*
+	if (Capsule) {
+		GEngine->AddOnScreenDebugMessage(-1, 1 / 60, FColor::Green, RootComponent->GetComponentLocation().ToString());
+		GEngine->AddOnScreenDebugMessage(-1, 1 / 60, FColor::Green, FVector(SweepResult.ImpactPoint.Y, SweepResult.ImpactPoint.Z, SweepResult.ImpactPoint.X).ToString());
+		GEngine->AddOnScreenDebugMessage(-1, 1 / 60, FColor::Red, SweepResult.ImpactNormal.ToString());
+		DrawDebugLine(GetWorld(), GetActorLocation(), FVector(SweepResult.Location.Y, SweepResult.Location.Z, SweepResult.Location.X), FColor::Green, false, 1, 0, 1);
+	}*/
 }
 
 void AMyPawn::RootCollisionExit(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
@@ -359,9 +364,19 @@ void AMyPawn::RootCollisionExit(UPrimitiveComponent* OverlappedComp, AActor* Oth
 	GEngine->AddOnScreenDebugMessage(-1, 1, FColor::Red, "BITCH");
 }
 
-void AMyPawn::RootHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, FVector NormalImpulse, const FHitResult& Hit)
+void AMyPawn::RootHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, FVector NormalImpulse, const FHitResult& SweepResult)
 {
-	GEngine->AddOnScreenDebugMessage(-1, 1, FColor::Purple, "FUCK YOU");
+	UCapsuleComponent* Capsule = Cast<UCapsuleComponent>(HitComponent);
+	if (Capsule) {
+		if ((SweepResult.ImpactPoint - (GetActorLocation() - Capsule->GetUpVector() * Capsule->GetScaledCapsuleHalfHeight_WithoutHemisphere())).DistanceInDirection(-Capsule->GetUpVector())
+			>= FMath::Sin(25 * PI / 180) * Capsule->GetScaledCapsuleRadius()) {
+			GEngine->AddOnScreenDebugMessage(-1, 1 / 60, FColor::Green, RootComponent->GetComponentLocation().ToString());
+			GEngine->AddOnScreenDebugMessage(-1, 1 / 60, FColor::Yellow, SweepResult.ImpactPoint.ToString());
+			GEngine->AddOnScreenDebugMessage(-1, 1 / 60, FColor::Red, SweepResult.ImpactNormal.ToString());
+			DrawDebugLine(GetWorld(), GetActorLocation(), SweepResult.ImpactPoint, FColor::Green, false, 1, 0, 1);
+			Grounded++;
+		}
+	}
 }
 
 bool AMyPawn::CheckGrounded() {
@@ -375,7 +390,8 @@ bool AMyPawn::CheckGrounded() {
 			MovementComp->downVel = FVector(0, 0, 0);
 		}
 	}
-	return MovementComp->CheckGrounded();
+
+	return ShadowSneak ? MovementComp->CheckGrounded() : Grounded >= 1;
 	/*UCapsuleComponent* a = Cast<UCapsuleComponent>(RootComponent);
 	FVector Start = GetActorLocation();
 	FVector End = GetActorLocation() - RootComponent->GetUpVector() * (a->GetScaledCapsuleHalfHeight() * 1.25 + 5);

@@ -59,6 +59,8 @@ public:
 	float currentHeight;
 	float addHeight;
 
+	bool CheckGrounded();
+
 	FVector CurrentVelocity;
 	float ForwardVel;
 	float RightVel;
@@ -102,7 +104,7 @@ protected:
 	void StartEndSneak();
 	void Jump();
 	void StopJumping();
-	bool CheckGrounded();
+
 	void Sprint();
 	void StopSprinting();
 	void CrouchControl();

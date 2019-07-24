@@ -2,10 +2,21 @@
 #include "CoreMinimal.h"
 #include "Runtime/Engine/Public/CollisionQueryParams.h"
 #include "Components/CapsuleComponent.h"
+#include "MyPawn.h"
+
+void UCustomMovement::BeginPlay() {
+	Super::BeginPlay();
+	Pawn = Cast<AMyPawn>(PawnOwner);
+
+}
 
 void UCustomMovement::TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+
+	GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Red, CheckGrounded() ? "true" : "false");
+	GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Green, Jumping ? "true" : "false");
+	GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Blue, EndJump ? "true" : "false");
 
 	// Make sure that everything is still valid, and that we are allowed to move.
 	if (!PawnOwner || !UpdatedComponent || ShouldSkipUpdate(DeltaTime))
@@ -53,7 +64,7 @@ void UCustomMovement::TickComponent(float DeltaTime, enum ELevelTick TickType, F
 			SlideAlongSurface(DesiredMovementThisFrame, 1.f - outHit.Time, outHit.Normal, outHit);
 		}
 	}
-	GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Yellow, CheckGrounded() ? "true" : "false");
+	//GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Yellow, CheckGrounded() ? "true" : "false");
 }
 void UCustomMovement::Jump() {
 	if (CheckGrounded()) {
@@ -63,9 +74,16 @@ void UCustomMovement::Jump() {
 }
 bool UCustomMovement::CheckGrounded() {
 	UCapsuleComponent* a = Cast<UCapsuleComponent>(UpdatedComponent);
+
+	AMyPawn* ThisPawn = Cast<AMyPawn>(PawnOwner);
+	
+	if (ThisPawn) {
+		return GroundNum > 0 || Stepping;
+	}
+
 	if (a) {
 		FVector Start = GetActorLocation();
-		FVector End = GetActorLocation() - UpdatedComponent->GetUpVector() * (a->GetScaledCapsuleHalfHeight() + 5);
+		FVector End = GetActorLocation() - UpdatedComponent->GetUpVector() * (a->GetScaledCapsuleHalfHeight() + 1);
 		//DrawDebugLine(GetWorld(), Start, End, FColor::Red, false, 5.f, 0, 1);
 		FCollisionQueryParams Params;
 		FHitResult Hit;
