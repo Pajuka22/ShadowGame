@@ -25,7 +25,10 @@ AMyPawn::AMyPawn()
 	Capsule->SetCapsuleHalfHeight(normalHeight);
 	Capsule->SetCapsuleRadius(NormalRadius);
 	Capsule->OnComponentBeginOverlap.AddDynamic(this, &AMyPawn::RootCollision);
+	Capsule->OnComponentEndOverlap.AddDynamic(this, &AMyPawn::RootCollisionExit);
+	Capsule->OnComponentHit.AddDynamic(this, &AMyPawn::RootHit);
 	RootComponent = Capsule;
+	//Capsule->SetActive(false);
 
 	VisibleComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));
 	VisibleComponent->SetupAttachment(RootComponent);
@@ -99,7 +102,7 @@ void AMyPawn::Tick(float DeltaTime)
 		}
 		Capsule->SetCapsuleHalfHeight(currentHeight);
 		RootComponent = Capsule;
-		MovementComp->AddInputVector(RootComponent->GetUpVector() * addHeight);
+		MovementComp->AddInputVector(RootComponent->GetUpVector() * (addHeight < 0 ? addHeight : 0));
 	}
 	if (Cast<UCustomMovement>(MovementComp) && CheckGrounded()) {
 		if (ShadowSneak) {
@@ -336,12 +339,31 @@ void AMyPawn::StartEndSneak() {
 	GetAddHeight();
 	MovementComp->Shadow = ShadowSneak;
 }
-void AMyPawn::RootCollision(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+void AMyPawn::RootCollision(class UPrimitiveComponent* HitComp, class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	if (SweepResult.ImpactPoint == FVector(0,0,0)) {
+	UCapsuleComponent* Capsule = Cast<UCapsuleComponent>(HitComp);
+	if (Capsule) {
+		if ((SweepResult.ImpactPoint - (GetActorLocation() - Capsule->GetUpVector() * Capsule->GetScaledCapsuleHalfHeight_WithoutHemisphere())).DistanceInDirection(-Capsule->GetUpVector()) 
+			>= FMath::Sin(25*PI/180) * Capsule->GetScaledCapsuleRadius()) {
 
+		}
 	}
+	GEngine->AddOnScreenDebugMessage(-1, 1 / 60, FColor::Green, RootComponent->GetComponentLocation().ToString());
+	GEngine->AddOnScreenDebugMessage(-1, 1 / 60, FColor::Green, FVector(SweepResult.Location.Y, SweepResult.Location.Z, SweepResult.Location.X).ToString());
+	GEngine->AddOnScreenDebugMessage(-1, 1 / 60, FColor::Red, SweepResult.ImpactNormal.ToString());
+	DrawDebugLine(GetWorld(), GetActorLocation(), FVector(SweepResult.Location.Y, SweepResult.Location.Z, SweepResult.Location.X), FColor::Green, false, 1, 0, 1);
 }
+
+void AMyPawn::RootCollisionExit(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+{
+	GEngine->AddOnScreenDebugMessage(-1, 1, FColor::Red, "BITCH");
+}
+
+void AMyPawn::RootHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, FVector NormalImpulse, const FHitResult& Hit)
+{
+	GEngine->AddOnScreenDebugMessage(-1, 1, FColor::Purple, "FUCK YOU");
+}
+
 bool AMyPawn::CheckGrounded() {
 	if (!MovementComp->CheckGrounded()) {
 		if (Jumping) {

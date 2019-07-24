@@ -64,7 +64,7 @@ public:
 	float RightVel;
 	float cameraRot;
 	bool ShadowSneak;
-	bool Grounded;
+	int Grounded;
 	bool Jumping;
 	bool EndJump;
 	bool bCrouch;
@@ -88,11 +88,11 @@ public:
 	float GetCapsuleVisibleArea();
 
 	enum Heights {
-		Stand,
-		Crouch,
-		Sneak
+		Standing,
+		Crouching,
+		Sneaking
 	};
-	Heights LastHeight = Heights::Stand;
+	Heights LastHeight = Heights::Standing;
 
 protected:
 	void MoveForward(float Val);
@@ -110,5 +110,11 @@ protected:
 	void StopCrouching();
 	void BufferEndCrouch();
 	void GetAddHeight();
-	void RootCollision(class UPrimitiveComponent* HitComponent, class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+
+	UFUNCTION()
+	void RootCollision(class UPrimitiveComponent* HitComp, class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+	UFUNCTION()
+	void RootCollisionExit(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+	UFUNCTION()
+	void RootHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, FVector NormalImpulse, const FHitResult& Hit);
 };
