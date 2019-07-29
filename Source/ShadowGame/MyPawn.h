@@ -96,6 +96,8 @@ public:
 	};
 	Heights LastHeight = Heights::Standing;
 
+	FVector FloorNormal;
+
 protected:
 	void MoveForward(float Val);
 	void MoveRight(float Val);
@@ -113,10 +115,13 @@ protected:
 	void BufferEndCrouch();
 	void GetAddHeight();
 
+	float FloorAngle;
+
 	UFUNCTION()
 	void RootCollision(class UPrimitiveComponent* HitComp, class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 	UFUNCTION()
 	void RootCollisionExit(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 	UFUNCTION()
 	void RootHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, FVector NormalImpulse, const FHitResult& Hit);
+
 };

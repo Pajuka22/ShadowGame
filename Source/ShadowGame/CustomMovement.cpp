@@ -32,27 +32,35 @@ void UCustomMovement::TickComponent(float DeltaTime, enum ELevelTick TickType, F
 		EndJump = true;
 		Jumping = false;
 	}
+	
+	CurrentLatVel = LateralVel.GetClampedToMaxSize(MovementSpeed);
+	GEngine->AddOnScreenDebugMessage(-1, 1, FColor::Purple, FString::SanitizeFloat(LateralVel.RadiansToVector(Pawn->FloorNormal)));
 	// Get (and then clear) the movement vector that we set in ACollidingPawn::Tick
-	AddInputVector(LateralVel.GetClampedToMaxSize(MovementSpeed));
-	LateralVel = FVector(0, 0, 0);
-	FVector DesiredMovementThisFrame = ConsumeInputVector() * DeltaTime;
-	DesiredMovementThisFrame += JumpVel * DeltaTime;
-	downVel += (Shadow ? UpdatedComponent->GetUpVector() : FVector::UpVector) * -30 * DeltaTime;
-	FHitResult outHit;
-	FVector Start = GetActorLocation();
-	FVector End = GetActorLocation() + UpdatedComponent->GetUpVector() * -100;
-	UCapsuleComponent * capsule = Cast<UCapsuleComponent>(UpdatedComponent);
-	if (capsule != nullptr) {	
-		End = GetActorLocation() + UpdatedComponent->GetUpVector() * -(CheckGrounded() ? (capsule->GetScaledCapsuleHalfHeight() + StepHeight) : 1.25 * capsule->GetScaledCapsuleHalfHeight());
+	if (LateralVel.RadiansToVector(Pawn->FloorNormal) > 0) {
+
+		FVector IDK = FVector::CrossProduct(LateralVel, Pawn->FloorNormal);
+		LateralVel = FVector::CrossProduct(IDK, Pawn->FloorNormal);
+		if (LateralVel.DistanceInDirection(CurrentLatVel) <= 0) {
+			LateralVel *= -1;
+		}
 
 	}
-	FCollisionQueryParams CollisionParams;
-	CollisionParams.AddIgnoredActor(PawnOwner);
-	bool isHit = GetWorld()->LineTraceSingleByChannel(outHit, Start, End, ECC_Visibility, CollisionParams);
+	if (FMath::RadiansToDegrees(Pawn->FloorNormal.RadiansToVector(UpdatedComponent->GetUpVector())) == 90) {
+
+	}
+	FVector DesiredMovementThisFrame = ConsumeInputVector() * DeltaTime;
+	DesiredMovementThisFrame += JumpVel * DeltaTime;
+	GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Purple, FString::SanitizeFloat(CurrentLatVel.Size()));
+	AddInputVector(LateralVel.GetClampedToSize(CurrentLatVel.Size(), CurrentLatVel.Size()));
+	LateralVel = FVector(0, 0, 0);
+
+	FHitResult outHit;
+	downVel += (Shadow ? UpdatedComponent->GetUpVector() : FVector::UpVector) * -30 * DeltaTime;
 	DesiredMovementThisFrame += downVel;
+
 	if (CheckGrounded() && !Jumping) {
 		float angle = FMath::Acos(FVector::DotProduct(UpdatedComponent->GetUpVector(), outHit.ImpactNormal));
-		downVel = FVector(0, 0, 0);
+		downVel = FVector(0,0,0);
 	}
 	if (!DesiredMovementThisFrame.IsNearlyZero())
 	{
@@ -64,7 +72,6 @@ void UCustomMovement::TickComponent(float DeltaTime, enum ELevelTick TickType, F
 			SlideAlongSurface(DesiredMovementThisFrame, 1.f - outHit.Time, outHit.Normal, outHit);
 		}
 	}
-	//GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Yellow, CheckGrounded() ? "true" : "false");
 }
 void UCustomMovement::Jump() {
 	if (CheckGrounded()) {
@@ -78,18 +85,19 @@ bool UCustomMovement::CheckGrounded() {
 	AMyPawn* ThisPawn = Cast<AMyPawn>(PawnOwner);
 	
 	if (ThisPawn) {
-		return GroundNum > 0 || Stepping;
-	}
-
-	if (a) {
 		FVector Start = GetActorLocation();
-		FVector End = GetActorLocation() - UpdatedComponent->GetUpVector() * (a->GetScaledCapsuleHalfHeight() + 1);
+		FVector End = GetActorLocation() - UpdatedComponent->GetUpVector() * (a->GetScaledCapsuleHalfHeight() + 5);
 		//DrawDebugLine(GetWorld(), Start, End, FColor::Red, false, 5.f, 0, 1);
 		FCollisionQueryParams Params;
 		FHitResult Hit;
 		Params.AddIgnoredActor(UpdatedComponent->GetOwner());
 		bool IsHit = GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility, Params);
-		return Hit.bBlockingHit || Stepping;
+		return GroundNum > 0 || Stepping || Hit.bBlockingHit;
+	}
+
+	if (a) {
+		
+		//return Hit.bBlockingHit || Stepping;
 	}
 	return false;
 }

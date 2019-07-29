@@ -88,13 +88,13 @@ void AMyPawn::Tick(float DeltaTime)
 	GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Orange, CheckGrounded() ? "true" : "false");
 
 	UCapsuleComponent* Capsule = Cast<UCapsuleComponent>(RootComponent);
-	MovementComp->AddInputVector(RootComponent->GetUpVector() * (addHeight < 0 ? addHeight : 0));
 	if (Capsule != nullptr && currentHeight != endHeight) {
+		MovementComp->AddInputVector(RootComponent->GetUpVector() * addHeight);
 		currentHeight += addHeight * DeltaTime;
 		if (currentHeight == endHeight || addHeight > 0 ? currentHeight + addHeight * DeltaTime > endHeight : currentHeight + addHeight * DeltaTime < endHeight) {
+			MovementComp->AddInputVector(RootComponent->GetUpVector() * (endHeight - currentHeight));
 			currentHeight = endHeight;
 			addHeight = 0;
-
 		}
 		MyCamera->SetRelativeLocation(FVector(0, 0, currentHeight));
 		Capsule->SetCapsuleRadius(NormalRadius);
@@ -163,7 +163,12 @@ void AMyPawn::Tick(float DeltaTime)
 			}
 		}
 		if (!CheckGrounded()) {
-			StartEndSneak();
+			Start = GetActorLocation() - Capsule->GetScaledCapsuleHalfHeight() * Capsule->GetUpVector();
+			End = Start - Capsule->GetUpVector() * MovementComp->StepHeight;
+			if (!GetWorld()->LineTraceSingleByChannel(hitResultTrace, Start, End, ECC_Visibility, queryParams)) {
+				StartEndSneak();
+			}
+			
 		}
 	}
 	else {
@@ -177,6 +182,7 @@ void AMyPawn::Tick(float DeltaTime)
 		}
 	}
 	Grounded = 0;
+	FloorAngle = 2 * PI;
 }
 
 // Called to bind functionality to input
@@ -209,7 +215,6 @@ void AMyPawn::MoveRight(float val) {
 	}
 }
 void AMyPawn::TurnAtRate(float rate) {
-	//GEngine->AddOnScreenDebugMessage(-1, 0.5f, FColor::Red, FString::SanitizeFloat(rate));
 	FVector newRight = RootComponent->GetRightVector().RotateAngleAxis(5 * rate, RootComponent->GetUpVector());
 	FVector newForward = RootComponent->GetForwardVector().RotateAngleAxis(5 * rate, RootComponent->GetUpVector());
 	RootComponent->SetWorldTransform(FTransform(newForward, newRight, RootComponent->GetUpVector(), GetActorLocation()));
@@ -317,7 +322,6 @@ void AMyPawn::StartEndSneak() {
 	FCollisionQueryParams params;
 	params.AddIgnoredActor(this);
 	ShadowSneak = !ShadowSneak;
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, CheckGrounded() ? "true" : "false");
 	if (!CheckGrounded()) {
 		ShadowSneak = false;
 	}
@@ -361,7 +365,6 @@ void AMyPawn::RootCollision(class UPrimitiveComponent* HitComp, class AActor* Ot
 
 void AMyPawn::RootCollisionExit(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
-	GEngine->AddOnScreenDebugMessage(-1, 1, FColor::Red, "BITCH");
 }
 
 void AMyPawn::RootHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, FVector NormalImpulse, const FHitResult& SweepResult)
@@ -370,11 +373,18 @@ void AMyPawn::RootHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPr
 	if (Capsule) {
 		if ((SweepResult.ImpactPoint - (GetActorLocation() - Capsule->GetUpVector() * Capsule->GetScaledCapsuleHalfHeight_WithoutHemisphere())).DistanceInDirection(-Capsule->GetUpVector())
 			>= FMath::Sin(25 * PI / 180) * Capsule->GetScaledCapsuleRadius()) {
-			GEngine->AddOnScreenDebugMessage(-1, 1 / 60, FColor::Green, RootComponent->GetComponentLocation().ToString());
-			GEngine->AddOnScreenDebugMessage(-1, 1 / 60, FColor::Yellow, SweepResult.ImpactPoint.ToString());
-			GEngine->AddOnScreenDebugMessage(-1, 1 / 60, FColor::Red, SweepResult.ImpactNormal.ToString());
-			DrawDebugLine(GetWorld(), GetActorLocation(), SweepResult.ImpactPoint, FColor::Green, false, 1, 0, 1);
+			DrawDebugLine(GetWorld(), SweepResult.ImpactPoint + 100 * SweepResult.ImpactNormal, SweepResult.ImpactPoint, FColor::Green, false, 1, 0, 1);
 			Grounded++;
+			FVector ThisNorm = -SweepResult.ImpactNormal;
+			GEngine->AddOnScreenDebugMessage(-1, 1 / 60, FColor::Red, FString::SanitizeFloat(ThisNorm.RadiansToVector(RootComponent->GetUpVector()) * 180 / PI));
+			if (ThisNorm.RadiansToVector(-HitComponent->GetUpVector()) < FloorAngle) {
+				FloorNormal = ThisNorm;
+				FloorAngle = ThisNorm.RadiansToVector(-HitComponent->GetUpVector());
+			}
+			if ((-ThisNorm).RadiansToVector(RootComponent->GetUpVector()) >= FMath::DegreesToRadians(85)) {
+				GEngine->AddOnScreenDebugMessage(-1, 1, FColor::Yellow, "FUCK YOU");
+				MovementComp->AddInputVector(RootComponent->GetUpVector() * 100);
+			}
 		}
 	}
 }
@@ -449,7 +459,6 @@ AMyPawn::Visibility AMyPawn::PStealth(FVector location, float Attenuation, float
 		mult = 0;
 		ReturnVis.GroundVis = 0;
 	}
-	//GEngine->AddOnScreenDebugMessage(-1, 0.2f, FColor::Green, FString::SanitizeFloat(mult));
 	ReturnVis.Vis = (2 * PI * (1 - FMath::Cos(PI)) * candelas * 10000) / (4 * PI * FMath::Pow((Start - End).Size(), 2)) * mult;
 	return ReturnVis;
 }
