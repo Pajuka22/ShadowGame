@@ -7,7 +7,7 @@
 void UCustomMovement::BeginPlay() {
 	Super::BeginPlay();
 	Pawn = Cast<AMyPawn>(PawnOwner);
-
+	Capsule = Cast<UCapsuleComponent>(UpdatedComponent);
 }
 
 void UCustomMovement::TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
@@ -23,12 +23,12 @@ void UCustomMovement::TickComponent(float DeltaTime, enum ELevelTick TickType, F
 	{
 		return;
 	}
-	if (EndJump && CheckGrounded()) {
+	if (EndJump && CanJump()) {
 		JumpVel = FVector(0, 0, 0);
 		EndJump = false;
 		Jumping = false;
 	}
-	if (!CheckGrounded() && Jumping) {
+	if (Jumping && !CanJump()) {
 		EndJump = true;
 		Jumping = false;
 	}
@@ -36,7 +36,7 @@ void UCustomMovement::TickComponent(float DeltaTime, enum ELevelTick TickType, F
 	CurrentLatVel = LateralVel.GetClampedToMaxSize(MovementSpeed);
 	GEngine->AddOnScreenDebugMessage(-1, 1, FColor::Purple, FString::SanitizeFloat(LateralVel.RadiansToVector(Pawn->FloorNormal)));
 	// Get (and then clear) the movement vector that we set in ACollidingPawn::Tick
-	if (LateralVel.RadiansToVector(Pawn->FloorNormal) > 0) {
+	if (LateralVel.RadiansToVector(Pawn->FloorNormal) > 0 && GroundNum > 0) {
 
 		FVector IDK = FVector::CrossProduct(LateralVel, Pawn->FloorNormal);
 		LateralVel = FVector::CrossProduct(IDK, Pawn->FloorNormal);
@@ -74,7 +74,8 @@ void UCustomMovement::TickComponent(float DeltaTime, enum ELevelTick TickType, F
 	}
 }
 void UCustomMovement::Jump() {
-	if (CheckGrounded()) {
+	if (CheckGrounded() || CanJump()) {
+		
 		JumpVel += UpdatedComponent->GetUpVector() * JumpSpeed;
 		Jumping = true;
 	}
@@ -101,18 +102,13 @@ bool UCustomMovement::CheckGrounded() {
 	}
 	return false;
 }
-bool UCustomMovement::CanStepUp(FVector Movement) {
-	UCapsuleComponent* Capsule = Cast <UCapsuleComponent>(UpdatedComponent);
-	if (Capsule) {
-		FVector Start = UpdatedComponent->GetComponentLocation() - UpdatedComponent->GetUpVector() * (Capsule->GetScaledCapsuleHalfHeight() - StepHeight);
-		FVector End = Start + Movement;
-		FHitResult OutHit;
-		FCollisionQueryParams params;
-		params.AddIgnoredActor(UpdatedComponent->GetOwner());
-		GetWorld()->LineTraceSingleByChannel(OutHit, Start, End, ECC_Visibility, params);
-		Stepping = OutHit.IsValidBlockingHit();
-		return Stepping;
-	}
-	return false;
+bool UCustomMovement::CanJump() {
+	FVector Start = Capsule->GetComponentLocation();
+	FVector End = Start - Capsule->GetUpVector() * (Capsule->GetScaledCapsuleHalfHeight() + StepHeight);
+	FHitResult OutHit;
+	FCollisionQueryParams Params;
+	Params.AddIgnoredActor(Pawn);
+	GetWorld()->LineTraceSingleByChannel(OutHit, Start, End, ECC_Visibility, Params);
+	return OutHit.bBlockingHit || CheckGrounded();
 }
 ;

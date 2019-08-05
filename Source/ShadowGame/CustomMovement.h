@@ -33,7 +33,7 @@ public:
 	bool Shadow;
 	void Jump();
 	bool CheckGrounded();
-	bool CanStepUp(FVector Movement);
+	bool CanJump();
 	void SlopeAdjust();
 	bool Stepping;
 	bool Jumping;
@@ -43,4 +43,5 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
+	UCapsuleComponent* Capsule;
 };
