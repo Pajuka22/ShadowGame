@@ -30,6 +30,7 @@ public:
 	FVector LateralVel;
 	FVector CurrentLatVel;
 	float MovementSpeed;
+	UCapsuleComponent* Capsule;
 	bool Shadow;
 	void Jump();
 	bool CheckGrounded();

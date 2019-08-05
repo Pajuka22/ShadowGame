@@ -85,7 +85,7 @@ void AMyPawn::Tick(float DeltaTime)
 	}
 	GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Red, FString::SanitizeFloat(FMath::Sqrt(MyVis.GroundVis)));
 	GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Red, FString::SanitizeFloat(FMath::Sqrt(MyVis.Vis)));
-	GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Orange, CheckGrounded() ? "true" : "false");
+	GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Orange, Grounded > 0 ? "true" : "false");
 
 	UCapsuleComponent* Capsule = Cast<UCapsuleComponent>(RootComponent);
 	if (Capsule != nullptr && currentHeight != endHeight) {
@@ -376,13 +376,14 @@ void AMyPawn::RootHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPr
 			DrawDebugLine(GetWorld(), SweepResult.ImpactPoint + 100 * SweepResult.ImpactNormal, SweepResult.ImpactPoint, FColor::Green, false, 1, 0, 1);
 			Grounded++;
 			FVector ThisNorm = -SweepResult.ImpactNormal;
-			GEngine->AddOnScreenDebugMessage(-1, 1 / 60, FColor::Red, FString::SanitizeFloat(ThisNorm.RadiansToVector(RootComponent->GetUpVector()) * 180 / PI));
 			if (ThisNorm.RadiansToVector(-HitComponent->GetUpVector()) < FloorAngle) {
 				FloorNormal = ThisNorm;
 				FloorAngle = ThisNorm.RadiansToVector(-HitComponent->GetUpVector());
 			}
+			//GEngine->AddOnScreenDebugMessage(-1, 0.5, FColor::Green, 
+				//FString::SanitizeFloat(Capsule->GetScaledCapsuleRadius() * FMath::Cos(-Capsule->GetUpVector().RadiansToVector(SweepResult.ImpactPoint - 
+				//(GetActorLocation() - Capsule->GetUpVector() * Capsule->GetScaledCapsuleHalfHeight_WithoutHemisphere())))));
 			if ((-ThisNorm).RadiansToVector(RootComponent->GetUpVector()) >= FMath::DegreesToRadians(85)) {
-				GEngine->AddOnScreenDebugMessage(-1, 1, FColor::Yellow, "FUCK YOU");
 				MovementComp->AddInputVector(RootComponent->GetUpVector() * 100);
 			}
 		}
