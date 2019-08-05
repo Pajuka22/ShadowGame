@@ -14,10 +14,6 @@ void UCustomMovement::TickComponent(float DeltaTime, enum ELevelTick TickType, F
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-	GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Red, CheckGrounded() ? "true" : "false");
-	GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Green, Jumping ? "true" : "false");
-	GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Blue, EndJump ? "true" : "false");
-
 	// Make sure that everything is still valid, and that we are allowed to move.
 	if (!PawnOwner || !UpdatedComponent || ShouldSkipUpdate(DeltaTime))
 	{
@@ -34,7 +30,6 @@ void UCustomMovement::TickComponent(float DeltaTime, enum ELevelTick TickType, F
 	}
 
 	CurrentLatVel = LateralVel.GetClampedToMaxSize(MovementSpeed);
-	GEngine->AddOnScreenDebugMessage(-1, 1, FColor::Purple, FString::SanitizeFloat(LateralVel.RadiansToVector(Pawn->FloorNormal)));
 	// Get (and then clear) the movement vector that we set in ACollidingPawn::Tick
 	if (LateralVel.RadiansToVector(Pawn->FloorNormal) > 0 && GroundNum > 0) {
 
@@ -50,7 +45,6 @@ void UCustomMovement::TickComponent(float DeltaTime, enum ELevelTick TickType, F
 	}
 	FVector DesiredMovementThisFrame = ConsumeInputVector() * DeltaTime;
 	DesiredMovementThisFrame += JumpVel * DeltaTime;
-	GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Purple, FString::SanitizeFloat(CurrentLatVel.Size()));
 	AddInputVector(LateralVel.GetClampedToSize(CurrentLatVel.Size(), CurrentLatVel.Size()));
 	LateralVel = FVector(0, 0, 0);
 

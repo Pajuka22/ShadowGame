@@ -85,7 +85,6 @@ void AMyPawn::Tick(float DeltaTime)
 	}
 	GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Red, FString::SanitizeFloat(FMath::Sqrt(MyVis.GroundVis)));
 	GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Red, FString::SanitizeFloat(FMath::Sqrt(MyVis.Vis)));
-	GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Orange, CheckGrounded() ? "true" : "false");
 
 	UCapsuleComponent* Capsule = Cast<UCapsuleComponent>(RootComponent);
 	if (Capsule != nullptr && currentHeight != endHeight) {
@@ -354,13 +353,6 @@ void AMyPawn::RootCollision(class UPrimitiveComponent* HitComp, class AActor* Ot
 
 		}
 	}
-	/*
-	if (Capsule) {
-		GEngine->AddOnScreenDebugMessage(-1, 1 / 60, FColor::Green, RootComponent->GetComponentLocation().ToString());
-		GEngine->AddOnScreenDebugMessage(-1, 1 / 60, FColor::Green, FVector(SweepResult.ImpactPoint.Y, SweepResult.ImpactPoint.Z, SweepResult.ImpactPoint.X).ToString());
-		GEngine->AddOnScreenDebugMessage(-1, 1 / 60, FColor::Red, SweepResult.ImpactNormal.ToString());
-		DrawDebugLine(GetWorld(), GetActorLocation(), FVector(SweepResult.Location.Y, SweepResult.Location.Z, SweepResult.Location.X), FColor::Green, false, 1, 0, 1);
-	}*/
 }
 
 void AMyPawn::RootCollisionExit(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
@@ -376,13 +368,11 @@ void AMyPawn::RootHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPr
 			DrawDebugLine(GetWorld(), SweepResult.ImpactPoint + 100 * SweepResult.ImpactNormal, SweepResult.ImpactPoint, FColor::Green, false, 1, 0, 1);
 			Grounded++;
 			FVector ThisNorm = -SweepResult.ImpactNormal;
-			GEngine->AddOnScreenDebugMessage(-1, 1 / 60, FColor::Red, FString::SanitizeFloat(ThisNorm.RadiansToVector(RootComponent->GetUpVector()) * 180 / PI));
 			if (ThisNorm.RadiansToVector(-HitComponent->GetUpVector()) < FloorAngle) {
 				FloorNormal = ThisNorm;
 				FloorAngle = ThisNorm.RadiansToVector(-HitComponent->GetUpVector());
 			}
 			if ((-ThisNorm).RadiansToVector(RootComponent->GetUpVector()) >= FMath::DegreesToRadians(85)) {
-				GEngine->AddOnScreenDebugMessage(-1, 1, FColor::Yellow, "FUCK YOU");
 				MovementComp->AddInputVector(RootComponent->GetUpVector() * 100);
 			}
 		}
