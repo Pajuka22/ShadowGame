@@ -85,6 +85,7 @@ void AMyPawn::Tick(float DeltaTime)
 	}
 	GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Red, FString::SanitizeFloat(FMath::Sqrt(MyVis.GroundVis)));
 	GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Red, FString::SanitizeFloat(FMath::Sqrt(MyVis.Vis)));
+	GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Orange, MovementComp->CanJump() ? "true" : "false");
 
 	UCapsuleComponent* Capsule = Cast<UCapsuleComponent>(RootComponent);
 	if (Capsule != nullptr && currentHeight != endHeight) {
@@ -353,6 +354,13 @@ void AMyPawn::RootCollision(class UPrimitiveComponent* HitComp, class AActor* Ot
 
 		}
 	}
+	/*
+	if (Capsule) {
+		GEngine->AddOnScreenDebugMessage(-1, 1 / 60, FColor::Green, RootComponent->GetComponentLocation().ToString());
+		GEngine->AddOnScreenDebugMessage(-1, 1 / 60, FColor::Green, FVector(SweepResult.ImpactPoint.Y, SweepResult.ImpactPoint.Z, SweepResult.ImpactPoint.X).ToString());
+		GEngine->AddOnScreenDebugMessage(-1, 1 / 60, FColor::Red, SweepResult.ImpactNormal.ToString());
+		DrawDebugLine(GetWorld(), GetActorLocation(), FVector(SweepResult.Location.Y, SweepResult.Location.Z, SweepResult.Location.X), FColor::Green, false, 1, 0, 1);
+	}*/
 }
 
 void AMyPawn::RootCollisionExit(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
