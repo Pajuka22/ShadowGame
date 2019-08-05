@@ -14,27 +14,27 @@ class SHADOWGAME_API UCustomMovement : public UPawnMovementComponent
 {
 	GENERATED_BODY()
 
-	UPROPERTY(EditAnywhere)
+		UPROPERTY(EditAnywhere)
 		float maxAngle = 50;
 	UPROPERTY(EditAnywhere)
 		float JumpSpeed;
 
 
 public:
+	virtual void TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 	UPROPERTY(EditAnywhere)
 		float StepHeight;
-	virtual void TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 	bool Running;
 	FVector downVel;
 	FVector JumpVel = FVector(0, 0, 0);
 	FVector LateralVel;
 	FVector CurrentLatVel;
 	float MovementSpeed;
-	UCapsuleComponent* Capsule;
 	bool Shadow;
 	void Jump();
 	bool CheckGrounded();
 	bool CanStepUp(FVector Movement);
+	void SlopeAdjust();
 	bool Stepping;
 	bool Jumping;
 	bool EndJump;

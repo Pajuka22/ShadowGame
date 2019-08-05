@@ -125,7 +125,7 @@ void AMyPawn::Tick(float DeltaTime)
 	if (ShadowSneak) {
 		FHitResult hitResultTrace;
 		FCollisionQueryParams queryParams;
-		
+
 		queryParams.AddIgnoredActor(this);
 
 		FVector under;
@@ -135,7 +135,7 @@ void AMyPawn::Tick(float DeltaTime)
 			ECC_Visibility, queryParams))
 		{
 			if (hitResultTrace.GetComponent() != nullptr) {
-				if (hitResultTrace.Component->Mobility != EComponentMobility::Movable){
+				if (hitResultTrace.Component->Mobility != EComponentMobility::Movable) {
 					under = hitResultTrace.ImpactPoint;
 					FVector newUp = hitResultTrace.ImpactNormal;
 					FVector newForward = FVector::CrossProduct(RootComponent->GetRightVector(), newUp);
@@ -168,7 +168,7 @@ void AMyPawn::Tick(float DeltaTime)
 			if (!GetWorld()->LineTraceSingleByChannel(hitResultTrace, Start, End, ECC_Visibility, queryParams)) {
 				StartEndSneak();
 			}
-			
+
 		}
 	}
 	else {
@@ -186,7 +186,7 @@ void AMyPawn::Tick(float DeltaTime)
 }
 
 // Called to bind functionality to input
-void AMyPawn::SetupPlayerInputComponent(UInputComponent * PlayerInputComponent)
+void AMyPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	check(PlayerInputComponent);
 	PlayerInputComponent->BindAxis("MoveForward", this, &AMyPawn::MoveForward);
@@ -349,8 +349,8 @@ void AMyPawn::RootCollision(class UPrimitiveComponent* HitComp, class AActor* Ot
 {
 	UCapsuleComponent* Capsule = Cast<UCapsuleComponent>(HitComp);
 	if (Capsule) {
-		if ((SweepResult.ImpactPoint - (GetActorLocation() - Capsule->GetUpVector() * Capsule->GetScaledCapsuleHalfHeight_WithoutHemisphere())).DistanceInDirection(-Capsule->GetUpVector()) 
-			>= FMath::Sin(25*PI/180) * Capsule->GetScaledCapsuleRadius()) {
+		if ((SweepResult.ImpactPoint - (GetActorLocation() - Capsule->GetUpVector() * Capsule->GetScaledCapsuleHalfHeight_WithoutHemisphere())).DistanceInDirection(-Capsule->GetUpVector())
+			>= FMath::Sin(25 * PI / 180) * Capsule->GetScaledCapsuleRadius()) {
 
 		}
 	}
@@ -376,12 +376,13 @@ void AMyPawn::RootHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPr
 			DrawDebugLine(GetWorld(), SweepResult.ImpactPoint + 100 * SweepResult.ImpactNormal, SweepResult.ImpactPoint, FColor::Green, false, 1, 0, 1);
 			Grounded++;
 			FVector ThisNorm = -SweepResult.ImpactNormal;
+			GEngine->AddOnScreenDebugMessage(-1, 1 / 60, FColor::Red, FString::SanitizeFloat(ThisNorm.RadiansToVector(RootComponent->GetUpVector()) * 180 / PI));
+			if (ThisNorm.RadiansToVector(-HitComponent->GetUpVector()) < FloorAngle) {
 				FloorNormal = ThisNorm;
 				FloorAngle = ThisNorm.RadiansToVector(-HitComponent->GetUpVector());
-			//GEngine->AddOnScreenDebugMessage(-1, 0.5, FColor::Green, 
-				//FString::SanitizeFloat(Capsule->GetScaledCapsuleRadius() * FMath::Cos(-Capsule->GetUpVector().RadiansToVector(SweepResult.ImpactPoint - 
-				//(GetActorLocation() - Capsule->GetUpVector() * Capsule->GetScaledCapsuleHalfHeight_WithoutHemisphere())))));
+			}
 			if ((-ThisNorm).RadiansToVector(RootComponent->GetUpVector()) >= FMath::DegreesToRadians(85)) {
+				GEngine->AddOnScreenDebugMessage(-1, 1, FColor::Yellow, "FUCK YOU");
 				MovementComp->AddInputVector(RootComponent->GetUpVector() * 100);
 			}
 		}
@@ -413,7 +414,7 @@ bool AMyPawn::CheckGrounded() {
 }
 
 void AMyPawn::GetAddHeight() {
-	addHeight = (endHeight - startHeight) / HeightInterpTime / (FMath::Abs(startHeight - endHeight)/(normalHeight - crouchHeight));
+	addHeight = (endHeight - startHeight) / HeightInterpTime / (FMath::Abs(startHeight - endHeight) / (normalHeight - crouchHeight));
 	UCapsuleComponent* A = Cast<UCapsuleComponent>(RootComponent);
 }
 
@@ -437,7 +438,7 @@ AMyPawn::Visibility AMyPawn::PStealth(FVector location, float Attenuation, float
 			if (!outHit.bBlockingHit) {
 				mult += 0.2;
 				if (f == -capsuleHeight) {
-					ReturnVis.GroundVis = candelas * 10000/ (FMath::Pow((Start - End).Size(), 2));
+					ReturnVis.GroundVis = candelas * 10000 / (FMath::Pow((Start - End).Size(), 2));
 				}
 			}
 		}
@@ -500,7 +501,7 @@ AMyPawn::Visibility AMyPawn::SStealth(FVector Spotlight, float inner, float oute
 				}
 				if (f == -halfHeight) {
 					ReturnVis.GroundVis = (angle <= inner ? 1 : (outer - angle) / (outer - inner)) *
-						(2 * PI * FMath::Cos(inner * PI / 180) * candelas * 10000)/FMath::Pow((Start - End).Size(), 2);
+						(2 * PI * FMath::Cos(inner * PI / 180) * candelas * 10000) / FMath::Pow((Start - End).Size(), 2);
 				}
 			}
 		}
@@ -558,7 +559,7 @@ void AMyPawn::SubVis(Visibility vis) {
 float AMyPawn::GetCapsuleVisibleArea() {
 	UCapsuleComponent* Capsule = Cast<UCapsuleComponent>(RootComponent);
 	if (Capsule) {
-		return 2 * Capsule->GetScaledCapsuleRadius()* Capsule->GetScaledCapsuleHalfHeight() + PI * FMath::Pow(Capsule->GetScaledCapsuleRadius(), 2);
+		return 2 * Capsule->GetScaledCapsuleRadius() * Capsule->GetScaledCapsuleHalfHeight() + PI * FMath::Pow(Capsule->GetScaledCapsuleRadius(), 2);
 	}
 	return 0;
 }
