@@ -53,14 +53,14 @@ void UCustomMovement::TickComponent(float DeltaTime, enum ELevelTick TickType, F
 	FVector DesiredMovementThisFrame = ConsumeInputVector() * DeltaTime;
 	DesiredMovementThisFrame += JumpVel * DeltaTime;//add jump velocity;
 	AddInputVector(LateralVel.GetClampedToSize(CurrentLatVel.Size(), CurrentLatVel.Size()));//make sure LatVel is the same size as the original input.
-	
+	LateralVel = FVector(0, 0, 0);//clear lateral velocity
 
 	FHitResult outHit;
 	downVel += (Shadow ? UpdatedComponent->GetUpVector() : FVector::UpVector) * -30 * DeltaTime;
 	//the only reason for that ternary is because I didn't want the player to fall in the current downward direction if they were getting out of shadow mode.
 	DesiredMovementThisFrame += downVel;//add downward velocity
 
-	if (GroundNum > 0 && !Jumping) {
+	if (CheckGrounded() && !Jumping) {
 		float angle = outHit.ImpactNormal.RadiansToVector(UpdatedComponent->GetUpVector());
 		//get angle between up vector and the ground, if this is greater than MaxAngle, slide.
 		if (angle <= maxAngle) {
@@ -69,19 +69,10 @@ void UCustomMovement::TickComponent(float DeltaTime, enum ELevelTick TickType, F
 	}
 	if (!DesiredMovementThisFrame.IsNearlyZero())
 	{
-		FVector Start = UpdatedComponent->GetComponentLocation() + LateralVel - UpdatedComponent->GetUpVector() * Capsule->GetScaledCapsuleHalfHeight();
+		FVector Start = UpdatedComponent->GetComponentLocation() + DesiredMovementThisFrame - UpdatedComponent->GetUpVector() * Capsule->GetScaledCapsuleHalfHeight();
 		FVector End = Start - Capsule->GetUpVector() * StepHeight;
 		FCollisionQueryParams Params;
 		Params.AddIgnoredActor(Pawn);
-		GetWorld()->LineTraceSingleByChannel(outHit, Start, End, ECC_Visibility, Params);
-		if (outHit.bBlockingHit && GroundNum > 0) {
-			End = Start - Capsule->GetUpVector();
-			GetWorld()->LineTraceSingleByChannel(outHit, Start, End, ECC_Visibility, Params);
-			if (!outHit.bBlockingHit) {
-				DesiredMovementThisFrame -= Capsule->GetUpVector() * 2;
-				GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Cyan, "Hit");
-			}
-		}
 		//if would be able to step down after movement and player is grounded, check 1 cm below player, and if there is nothing there, add an input vector downward. Not working.
 		SafeMoveUpdatedComponent(DesiredMovementThisFrame, UpdatedComponent->GetComponentRotation(), true, outHit);
 
@@ -91,7 +82,6 @@ void UCustomMovement::TickComponent(float DeltaTime, enum ELevelTick TickType, F
 			SlideAlongSurface(DesiredMovementThisFrame, 1.f - outHit.Time, outHit.Normal, outHit);
 		}
 	}
-	LateralVel = FVector(0, 0, 0);//clear lateral velocity
 }
 void UCustomMovement::Jump() {
 	if (CheckGrounded()) {
@@ -114,7 +104,7 @@ bool UCustomMovement::CheckGrounded() {
 		FHitResult Hit;
 		Params.AddIgnoredActor(UpdatedComponent->GetOwner());
 		bool IsHit = GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility, Params);
-		return GroundNum > 0 || Stepping;
+		return GroundNum > 0 || Stepping || Hit.bBlockingHit;
 		//check 5 cm below. if the number of grounded collisions > 0, bool Stepping is true, or there's a hit on the line trace, return true.
 	}
 
