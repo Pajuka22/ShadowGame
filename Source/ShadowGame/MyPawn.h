@@ -89,12 +89,13 @@ public:
 	void SubVis(Visibility vis);
 	float GetCapsuleVisibleArea();
 
-	enum Heights {
+	enum HeightModes {
 		Standing,
 		Crouching,
 		Sneaking
 	};
-	Heights LastHeight = Heights::Standing;
+	HeightModes LastMode = HeightModes::Standing;
+	HeightModes CurrentMode = HeightModes::Standing;
 
 	FVector FloorNormal;
 

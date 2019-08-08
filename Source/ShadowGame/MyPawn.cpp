@@ -85,7 +85,7 @@ void AMyPawn::Tick(float DeltaTime)
 	}
 	GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Red, FString::SanitizeFloat(FMath::Sqrt(MyVis.GroundVis)));
 	GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Red, FString::SanitizeFloat(FMath::Sqrt(MyVis.Vis)));
-	GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Orange, MovementComp->CanJump() ? "true" : "false");
+	GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Orange, MovementComp->Jumping ? "true" : "false");
 
 	UCapsuleComponent* Capsule = Cast<UCapsuleComponent>(RootComponent);
 	if (Capsule != nullptr && currentHeight != endHeight) {
@@ -96,7 +96,7 @@ void AMyPawn::Tick(float DeltaTime)
 			currentHeight = endHeight;
 			addHeight = 0;
 		}
-		MyCamera->SetRelativeLocation(FVector(0, 0, currentHeight));
+		MyCamera->SetRelativeLocation(FVector(0, 0, currentHeight - 12));
 		Capsule->SetCapsuleRadius(NormalRadius);
 		if (Capsule->GetScaledCapsuleRadius() > currentHeight) {
 			Capsule->SetCapsuleRadius(currentHeight);
@@ -338,9 +338,9 @@ void AMyPawn::StartEndSneak() {
 	}
 	else {
 		endHeight = bCrouch ? crouchHeight : normalHeight;
-		GetWorld()->LineTraceSingleByChannel(outHit, GetActorLocation(),
+		/*GetWorld()->LineTraceSingleByChannel(outHit, GetActorLocation(),
 			GetActorLocation() + RootComponent->GetUpVector() * (normalHeight + (endHeight - currentHeight)), ECC_Visibility, params);
-		endHeight = outHit.bBlockingHit ? currentHeight : endHeight;
+		endHeight = outHit.bBlockingHit ? currentHeight : endHeight;*/
 	}
 	GetAddHeight();
 	MovementComp->Shadow = ShadowSneak;
@@ -371,6 +371,23 @@ void AMyPawn::RootHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPr
 {
 	UCapsuleComponent* Capsule = Cast<UCapsuleComponent>(HitComponent);
 	if (Capsule) {
+		//GEngine->AddOnScreenDebugMessage(-1, 1/60, FColor::Cyan, FString::SanitizeFloat((SweepResult.ImpactPoint - GetActorLocation()).DistanceInDirection(RootComponent->GetUpVector()) - Capsule->GetScaledCapsuleHalfHeight_WithoutHemisphere()));
+		if ((SweepResult.ImpactPoint - GetActorLocation()).DistanceInDirection(RootComponent->GetUpVector()) > Capsule->GetScaledCapsuleHalfHeight_WithoutHemisphere()) {
+			if (!(MovementComp->Jumping || MovementComp->EndJump)) {
+				if (currentHeight > crouchHeight) {
+					Crouch();
+				}
+				else {
+					StartEndSneak();
+				}
+			}
+			else {
+				GEngine->AddOnScreenDebugMessage(-1, 0.5, FColor::Green, "true");
+				MovementComp->Jumping = false;
+				MovementComp->JumpVel = FVector(0, 0, 0);
+				MovementComp->EndJump = true;
+			}
+		}
 		if ((SweepResult.ImpactPoint - (GetActorLocation() - Capsule->GetUpVector() * Capsule->GetScaledCapsuleHalfHeight_WithoutHemisphere())).DistanceInDirection(-Capsule->GetUpVector())
 			>= FMath::Sin(25 * PI / 180) * Capsule->GetScaledCapsuleRadius()) {
 			DrawDebugLine(GetWorld(), SweepResult.ImpactPoint + 100 * SweepResult.ImpactNormal, SweepResult.ImpactPoint, FColor::Green, false, 1, 0, 1);
@@ -384,6 +401,7 @@ void AMyPawn::RootHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPr
 				MovementComp->AddInputVector(RootComponent->GetUpVector() * 100);
 			}
 		}
+		
 	}
 }
 
