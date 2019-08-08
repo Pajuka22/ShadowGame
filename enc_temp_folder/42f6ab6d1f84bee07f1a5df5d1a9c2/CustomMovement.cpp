@@ -19,7 +19,7 @@ void UCustomMovement::TickComponent(float DeltaTime, enum ELevelTick TickType, F
 	GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Blue, EndJump ? "true" : "false");
 
 	// Make sure that everything is still valid, and that we are allowed to move.
-	if (!PawnOwner || !Capsule || ShouldSkipUpdate(DeltaTime))
+	if (!PawnOwner || !UpdatedComponent || ShouldSkipUpdate(DeltaTime))
 	{
 		return;
 	}
@@ -57,11 +57,8 @@ void UCustomMovement::TickComponent(float DeltaTime, enum ELevelTick TickType, F
 	DesiredMovementThisFrame += downVel;
 
 	if (CheckGrounded() && !Jumping) {
-		float angle = FMath::RadiansToDegrees(Pawn->FloorNormal.RadiansToVector(-Capsule->GetUpVector()));
-		GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Purple, FString::SanitizeFloat(angle));
-		//if (angle <= maxAngle) {
-			downVel = FVector(0, 0, 0);
-		//}
+		float angle = FMath::Acos(FVector::DotProduct(UpdatedComponent->GetUpVector(), outHit.ImpactNormal));
+		downVel = FVector(0, 0, 0);
 	}
 	if (!DesiredMovementThisFrame.IsNearlyZero())
 	{

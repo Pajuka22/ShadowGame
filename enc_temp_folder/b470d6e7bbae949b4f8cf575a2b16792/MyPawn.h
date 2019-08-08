@@ -36,33 +36,45 @@ public:
 	UPROPERTY(EditAnywhere)
 		float SneakSpeed = 200;
 	UPROPERTY(EditAnywhere)
-		float CrouchSpeed = 300;
+		float CrouchSpeed = 150;
 	UPROPERTY(EditAnywhere)
 		float NormalSpeed = 300;
 	UPROPERTY(EditAnywhere)
 		float SprintSpeed = 600;
 	UPROPERTY(EditAnywhere)
-		float sneakHeight = 16;
+		float sneakHeight = 1;
 	UPROPERTY(EditAnywhere)
 		float crouchHeight = 50;
 	UPROPERTY(EditAnywhere)
 		float normalHeight = 100;
 	UPROPERTY(EditAnywhere)
-		float HeightInterpTime = 0.3;
+		float HeightInterpTime;
 	UPROPERTY(EditAnywhere)
 		float SneakThreshold;
 	UPROPERTY(EditAnywhere, meta = (ClampMin = "1", ClampMax = "100"))
 		float NormalRadius = 50;
-	
+	float JumpSpeed = 1000;
+	float startHeight;
+	float endHeight;
+	float currentHeight;
+	float addHeight;
 
 	bool CheckGrounded();
 
+	FVector CurrentVelocity;
+	float ForwardVel;
+	float RightVel;
+	float cameraRot;
 	bool ShadowSneak;
 	int Grounded;
+	bool Jumping;
+	bool EndJump;
 	bool bCrouch;
 	bool bSprint;
 	bool bBufferSprint;
 	bool bBufferEndSprint;
+	FVector JumpVect;
+	FVector LateralMovement = FVector(0, 0, 0);
 	struct Visibility {
 		float Vis;
 		float GroundVis;
@@ -77,15 +89,17 @@ public:
 	void SubVis(Visibility vis);
 	float GetCapsuleVisibleArea();
 
+	enum HeightModes {
+		Standing,
+		Crouching,
+		Sneaking
+	};
+	HeightModes LastState = HeightModes::Standing;
+	HeightModes CurrentHeight = HeightModes::Standing;
 
 	FVector FloorNormal;
 
 protected:
-	float startHeight;
-	float endHeight;
-	float currentHeight;
-	float addHeight;
-
 	void MoveForward(float Val);
 	void MoveRight(float Val);
 	void TurnAtRate(float Rate);

@@ -17,7 +17,7 @@ class SHADOWGAME_API UCustomMovement : public UPawnMovementComponent
 		UPROPERTY(EditAnywhere)
 		float maxAngle = 50;
 	UPROPERTY(EditAnywhere)
-		float JumpSpeed;
+		float JumpSpeed = 800;
 
 
 public:

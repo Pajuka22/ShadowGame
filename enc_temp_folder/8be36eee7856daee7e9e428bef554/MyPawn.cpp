@@ -43,9 +43,13 @@ AMyPawn::AMyPawn()
 	MovementComp->UpdatedComponent = RootComponent;
 
 
+	ForwardVel = 0;
+	RightVel = 0;
+
 	AutoPossessPlayer = EAutoReceiveInput::Player0;
 	RootComponent->SetRelativeRotation(FRotator(0, 0, 0));
 	SetActorRotation(FRotator(0, 0, 0));
+	cameraRot = 0;
 
 	startHeight = normalHeight;
 	endHeight = normalHeight;
@@ -54,6 +58,7 @@ AMyPawn::AMyPawn()
 	MyVis.Vis = 0;
 	MyVis.GroundVis = 0;
 
+	JumpVect = FVector(0, 0, 750);
 }
 
 // Called when the game starts or when spawned
@@ -67,7 +72,11 @@ void AMyPawn::BeginPlay()
 void AMyPawn::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+	/*if (!CurrentVelocity.IsZero()) {
+		SetActorLocation(GetActorLocation() + CurrentVelocity * DeltaTime);
+	}*/
 	MovementComp->GroundNum = Grounded;
+	JumpVect = JumpSpeed * RootComponent->GetUpVector();
 	MovementComp->Velocity = FVector();
 	SetActorRotation(GetActorRotation() + FRotator(0, 0, 0));
 	//DrawDebugLine(GetWorld(), GetActorLocation(), GetActorLocation() + 100 * RootComponent->GetUpVector(), FColor::Red, false, 5.f, 0, 1);
@@ -302,6 +311,8 @@ void AMyPawn::Jump() {
 	if (ShadowSneak) {
 		StartEndSneak();
 	}
+	Jumping = true;
+	EndJump = false;
 }
 void AMyPawn::StopJumping() {
 
@@ -395,7 +406,27 @@ void AMyPawn::RootHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPr
 }
 
 bool AMyPawn::CheckGrounded() {
+	if (!MovementComp->CheckGrounded()) {
+		if (Jumping) {
+			EndJump = true;
+		}
+	}
+	else {
+		if (EndJump) {
+			MovementComp->downVel = FVector(0, 0, 0);
+		}
+	}
+
 	return ShadowSneak ? MovementComp->CheckGrounded() : Grounded >= 1;
+	/*UCapsuleComponent* a = Cast<UCapsuleComponent>(RootComponent);
+	FVector Start = GetActorLocation();
+	FVector End = GetActorLocation() - RootComponent->GetUpVector() * (a->GetScaledCapsuleHalfHeight() * 1.25 + 5);
+	//DrawDebugLine(GetWorld(), Start, End, FColor::Red, false, 5.f, 0, 1);
+	FCollisionQueryParams Params;
+	FHitResult Hit;
+	Params.AddIgnoredActor(this);
+	bool IsHit = GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility, Params);
+	return Hit.bBlockingHit;*/
 }
 
 void AMyPawn::GetAddHeight() {
@@ -435,6 +466,7 @@ AMyPawn::Visibility AMyPawn::PStealth(FVector location, float Attenuation, float
 			if (!outHit.bBlockingHit) {
 				mult += 0.2;
 			}
+			//DrawDebugLine(GetWorld(), outHit.ImpactPoint, End, FColor::Green, false, 1, 0, 1);
 		}
 		//for the top bottom, left, right, and center of the player, do a line check. If there's something in the way subtract 0.2 from the multiplier cuz 5 points
 		//if there's nothing in the don't do anything.
@@ -543,7 +575,7 @@ void AMyPawn::SubVis(Visibility vis) {
 float AMyPawn::GetCapsuleVisibleArea() {
 	UCapsuleComponent* Capsule = Cast<UCapsuleComponent>(RootComponent);
 	if (Capsule) {
-		return 2 * Capsule->GetScaledCapsuleRadius() * Capsule->GetScaledCapsuleHalfHeight_WithoutHemisphere() + PI * FMath::Pow(Capsule->GetScaledCapsuleRadius(), 2);
+		return 2 * Capsule->GetScaledCapsuleRadius() * Capsule->GetScaledCapsuleHalfHeight() + PI * FMath::Pow(Capsule->GetScaledCapsuleRadius(), 2);
 	}
 	return 0;
 }
