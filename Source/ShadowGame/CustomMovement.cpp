@@ -34,6 +34,7 @@ void UCustomMovement::TickComponent(float DeltaTime, enum ELevelTick TickType, F
 	}
 
 	CurrentLatVel = LateralVel.GetClampedToMaxSize(MovementSpeed);
+	Walking = CheckGrounded() && !LateralVel.IsNearlyZero();
 	// Get (and then clear) the movement vector that we set in ACollidingPawn::Tick
 	if (LateralVel.RadiansToVector(Pawn->FloorNormal) > 0) {
 

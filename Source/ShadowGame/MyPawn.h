@@ -53,7 +53,12 @@ public:
 		float SneakThreshold;
 	UPROPERTY(EditAnywhere, meta = (ClampMin = "1", ClampMax = "100"))
 		float NormalRadius = 50;
-	
+	UPROPERTY(EditAnywhere)
+		class UCurveVector* WalkCurve;
+	UPROPERTY(EditAnywhere)
+		float WalkCurveStartLoop = 0;
+	UPROPERTY(EditAnywhere)
+		float WalkCurveEndLoop = 3;
 
 	bool CheckGrounded();
 
@@ -77,10 +82,14 @@ public:
 	void SubVis(Visibility vis);
 	float GetCapsuleVisibleArea();
 
-
 	FVector FloorNormal;
+	UPROPERTY(EditAnywhere)
+	float MaxHP;
+
+	float CurrentHP;
 
 protected:
+	float CurveTime = 0;
 	float startHeight;
 	float endHeight;
 	float currentHeight;

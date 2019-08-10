@@ -41,6 +41,7 @@ public:
 	class AMyPawn* Pawn;
 	int GroundNum = 0;
 	UCapsuleComponent* Capsule;
+	bool Walking;
 
 protected:
 	virtual void BeginPlay() override;
