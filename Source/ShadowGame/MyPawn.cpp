@@ -13,6 +13,8 @@
 #include "Runtime/Core/Public/Math/Vector.h"
 #include "Runtime/Engine/Public/DrawDebugHelpers.h"
 #include "Runtime/Core/Public/Math/TransformNonVectorized.h"
+#include "Runtime/Engine/Classes/Curves/CurveVector.h"
+
 
 // Sets default values
 AMyPawn::AMyPawn()
@@ -67,6 +69,7 @@ void AMyPawn::BeginPlay()
 void AMyPawn::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+
 	MovementComp->GroundNum = Grounded;
 	MovementComp->Velocity = FVector();
 	SetActorRotation(GetActorRotation() + FRotator(0, 0, 0));
@@ -76,7 +79,17 @@ void AMyPawn::Tick(float DeltaTime)
 	}
 	GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Red, FString::SanitizeFloat(FMath::Sqrt(MyVis.GroundVis)));
 	GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Red, FString::SanitizeFloat(FMath::Sqrt(MyVis.Vis)));
+	GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Red, FString::SanitizeFloat(currentHeight));
 	GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Orange, MovementComp->Jumping ? "true" : "false");
+
+	MyCamera->SetRelativeLocation(WalkCurve->GetVectorValue(CurveTime) * (MovementComp->Walking && !ShadowSneak ? (!bCrouch ? 1 : 0.75) : 0) + FVector(0, 0, currentHeight - 12));
+	if (MovementComp->Walking) {
+		CurveTime += DeltaTime * (bSprint ? 1.5 : (bCrouch ? 0.75 : 1));
+		CurveTime = CurveTime > WalkCurveEndLoop ? WalkCurveStartLoop + CurveTime - WalkCurveEndLoop : CurveTime;
+	}
+	else {
+		CurveTime = 0;
+	}
 
 	UCapsuleComponent* Capsule = Cast<UCapsuleComponent>(RootComponent);
 	if (Capsule != nullptr && currentHeight != endHeight) {
@@ -87,7 +100,6 @@ void AMyPawn::Tick(float DeltaTime)
 			currentHeight = endHeight;
 			addHeight = 0;
 		}
-		MyCamera->SetRelativeLocation(FVector(0, 0, currentHeight - 12));
 		Capsule->SetCapsuleRadius(NormalRadius);
 		if (Capsule->GetScaledCapsuleRadius() > currentHeight) {
 			Capsule->SetCapsuleRadius(currentHeight);
@@ -361,12 +373,12 @@ void AMyPawn::RootHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPr
 	UCapsuleComponent* Capsule = Cast<UCapsuleComponent>(HitComponent);
 	if (Capsule) {
 		//GEngine->AddOnScreenDebugMessage(-1, 1/60, FColor::Cyan, FString::SanitizeFloat((SweepResult.ImpactPoint - GetActorLocation()).DistanceInDirection(RootComponent->GetUpVector()) - Capsule->GetScaledCapsuleHalfHeight_WithoutHemisphere()));
-		if ((SweepResult.ImpactPoint - GetActorLocation()).DistanceInDirection(RootComponent->GetUpVector()) > Capsule->GetScaledCapsuleHalfHeight_WithoutHemisphere()) {
-			if (!(MovementComp->Jumping || MovementComp->EndJump)) {
+		if ((SweepResult.ImpactPoint - GetActorLocation()).DistanceInDirection(RootComponent->GetUpVector()) > Capsule->GetScaledCapsuleHalfHeight_WithoutHemisphere() + 2) {
+			if (!(MovementComp->Jumping || MovementComp->EndJump) && addHeight > 0) {
 				if (currentHeight > crouchHeight) {
 					Crouch();
 				}
-				else {
+				else if (!ShadowSneak) {
 					StartEndSneak();
 				}
 			}
