@@ -82,7 +82,7 @@ void AMyPawn::Tick(float DeltaTime)
 	GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Red, FString::SanitizeFloat(currentHeight));
 	GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Orange, MovementComp->Jumping ? "true" : "false");
 
-	MyCamera->SetRelativeLocation(WalkCurve->GetVectorValue(CurveTime) * (MovementComp->Walking && !ShadowSneak ? (!bCrouch ? 1 : 0.75) : 0) + FVector(0, 0, currentHeight - 12));
+	MyCamera->SetRelativeLocation(WalkCurve->GetVectorValue(CurveTime) * (MovementComp->Walking && !ShadowSneak ? (!bCrouch ? (bSprint ? 1.5 : 1) : 0.75) : 0) + FVector(0, 0, currentHeight - 12));
 	if (MovementComp->Walking) {
 		CurveTime += DeltaTime * (bSprint ? 1.5 : (bCrouch ? 0.75 : 1));
 		CurveTime = CurveTime > WalkCurveEndLoop ? WalkCurveStartLoop + CurveTime - WalkCurveEndLoop : CurveTime;
