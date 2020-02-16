@@ -5,7 +5,7 @@
 #include "Runtime/Engine/Classes/Components/DirectionalLightComponent.h"
 #include "Runtime/Engine/Classes/Engine/Scene.h"
 #include "Engine/World.h"
-#include "MyPawn.h"
+#include "PlayerPawn.h"
 
 // Sets default values
 AStealthD::AStealthD()
@@ -27,7 +27,7 @@ void AStealthD::BeginPlay()
 void AStealthD::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	Player = Cast<AMyPawn>(GetWorld()->GetFirstPlayerController()->GetPawn());
+	Player = Cast<APlayerPawn>(GetWorld()->GetFirstPlayerController()->GetPawn());
 	if (Player != nullptr) {
 		if (HitLast) {
 			Player->SubVis(value);

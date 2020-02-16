@@ -2,11 +2,11 @@
 #include "CoreMinimal.h"
 #include "Runtime/Engine/Public/CollisionQueryParams.h"
 #include "Components/CapsuleComponent.h"
-#include "MyPawn.h"
+#include "PlayerPawn.h"
 
 void UCustomMovement::BeginPlay() {
 	Super::BeginPlay();
-	Pawn = Cast<AMyPawn>(PawnOwner);
+	Pawn = Cast<APlayerPawn>(PawnOwner);
 	Capsule = Cast<UCapsuleComponent>(UpdatedComponent);
 }
 

@@ -38,7 +38,7 @@ public:
 	bool Stepping;
 	bool Jumping;
 	bool EndJump;
-	class AMyPawn* Pawn;
+	class APlayerPawn* Pawn;
 	int GroundNum = 0;
 	UCapsuleComponent* Capsule;
 	bool Walking;

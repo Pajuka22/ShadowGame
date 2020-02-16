@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "MyPawn.h"
+#include "PlayerPawn.h"
 #include "StealthS.generated.h"
 
 UCLASS()
@@ -19,13 +19,13 @@ public:
 	// Sets default values for this actor's properties
 	AStealthS();
 
-	class AMyPawn* Player;
+	class APlayerPawn* Player;
 
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 	bool HitLast = false;
-	AMyPawn::Visibility value;
+	APlayerPawn::Visibility value;
 
 public:
 	// Called every frame

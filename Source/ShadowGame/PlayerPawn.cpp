@@ -1,6 +1,6 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-#include "MyPawn.h"
+#include "PlayerPawn.h"
 #include "Components/InputComponent.h"
 #include "Runtime/HeadMountedDisplay/Public/MotionControllerComponent.h"
 #include "Camera/CameraComponent.h"
@@ -17,7 +17,7 @@
 
 
 // Sets default values
-AMyPawn::AMyPawn()
+APlayerPawn::APlayerPawn()
 {
 	// Set this pawn to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
@@ -26,9 +26,9 @@ AMyPawn::AMyPawn()
 	Capsule->SetCollisionProfileName(TEXT("Pawn"));
 	Capsule->SetCapsuleHalfHeight(normalHeight);
 	Capsule->SetCapsuleRadius(NormalRadius);
-	Capsule->OnComponentBeginOverlap.AddDynamic(this, &AMyPawn::RootCollision);
-	Capsule->OnComponentEndOverlap.AddDynamic(this, &AMyPawn::RootCollisionExit);
-	Capsule->OnComponentHit.AddDynamic(this, &AMyPawn::RootHit);
+	Capsule->OnComponentBeginOverlap.AddDynamic(this, &APlayerPawn::RootCollision);
+	Capsule->OnComponentEndOverlap.AddDynamic(this, &APlayerPawn::RootCollisionExit);
+	Capsule->OnComponentHit.AddDynamic(this, &APlayerPawn::RootHit);
 	RootComponent = Capsule;
 	//Capsule->SetActive(false);
 
@@ -59,14 +59,14 @@ AMyPawn::AMyPawn()
 }
 
 // Called when the game starts or when spawned
-void AMyPawn::BeginPlay()
+void APlayerPawn::BeginPlay()
 {
 	Super::BeginPlay();
 
 }
 
 // Called every frame
-void AMyPawn::Tick(float DeltaTime)
+void APlayerPawn::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
@@ -82,7 +82,7 @@ void AMyPawn::Tick(float DeltaTime)
 	GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Red, FString::SanitizeFloat(currentHeight));
 	GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Orange, MovementComp->Jumping ? "true" : "false");
 
-	MyCamera->SetRelativeLocation(WalkCurve->GetVectorValue(CurveTime) * (MovementComp->Walking && !ShadowSneak ? (!bCrouch ? 1 : 0.75) : 0) + FVector(0, 0, currentHeight - 12));
+	MyCamera->SetRelativeLocation(WalkCurve->GetVectorValue(CurveTime) * (MovementComp->Walking && !ShadowSneak ? (!bCrouch ? (bSprint ? 1.5 : 1) : 0.75) : 0) + FVector(0, 0, currentHeight - 12));
 	if (MovementComp->Walking) {
 		CurveTime += DeltaTime * (bSprint ? 1.5 : (bCrouch ? 0.75 : 1));
 		CurveTime = CurveTime > WalkCurveEndLoop ? WalkCurveStartLoop + CurveTime - WalkCurveEndLoop : CurveTime;
@@ -189,40 +189,40 @@ void AMyPawn::Tick(float DeltaTime)
 }
 
 // Called to bind functionality to input
-void AMyPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
+void APlayerPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	check(PlayerInputComponent);
-	PlayerInputComponent->BindAxis("MoveForward", this, &AMyPawn::MoveForward);
-	PlayerInputComponent->BindAxis("MoveRight", this, &AMyPawn::MoveRight);
-	PlayerInputComponent->BindAxis("Turn", this, &AMyPawn::TurnAtRate);
-	PlayerInputComponent->BindAxis("LookUp", this, &AMyPawn::LookUpAtRate);
+	PlayerInputComponent->BindAxis("MoveForward", this, &APlayerPawn::MoveForward);
+	PlayerInputComponent->BindAxis("MoveRight", this, &APlayerPawn::MoveRight);
+	PlayerInputComponent->BindAxis("Turn", this, &APlayerPawn::TurnAtRate);
+	PlayerInputComponent->BindAxis("LookUp", this, &APlayerPawn::LookUpAtRate);
 
-	PlayerInputComponent->BindAction("Sneaky", IE_Pressed, this, &AMyPawn::StartEndSneak);
-	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &AMyPawn::Jump);
-	PlayerInputComponent->BindAction("Sprint", IE_Pressed, this, &AMyPawn::Sprint);
-	PlayerInputComponent->BindAction("Sprint", IE_Released, this, &AMyPawn::StopSprinting);
-	PlayerInputComponent->BindAction("Crouch", IE_Pressed, this, &AMyPawn::CrouchControl);
+	PlayerInputComponent->BindAction("Sneaky", IE_Pressed, this, &APlayerPawn::StartEndSneak);
+	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &APlayerPawn::Jump);
+	PlayerInputComponent->BindAction("Sprint", IE_Pressed, this, &APlayerPawn::Sprint);
+	PlayerInputComponent->BindAction("Sprint", IE_Released, this, &APlayerPawn::StopSprinting);
+	PlayerInputComponent->BindAction("Crouch", IE_Pressed, this, &APlayerPawn::CrouchControl);
 }
-UPawnMovementComponent* AMyPawn::GetMovementComponent() const
+UPawnMovementComponent* APlayerPawn::GetMovementComponent() const
 {
 	return MovementComp;
 }
-void AMyPawn::MoveForward(float val) {
+void APlayerPawn::MoveForward(float val) {
 	if (MovementComp && MovementComp->UpdatedComponent == RootComponent) {
 		MovementComp->LateralVel += (GetActorForwardVector() * val * MovementComp->MovementSpeed);
 	}
 }
-void AMyPawn::MoveRight(float val) {
+void APlayerPawn::MoveRight(float val) {
 	if (MovementComp && MovementComp->UpdatedComponent == RootComponent) {
 		MovementComp->LateralVel += (GetActorRightVector() * val * MovementComp->MovementSpeed);
 	}
 }
-void AMyPawn::TurnAtRate(float rate) {
+void APlayerPawn::TurnAtRate(float rate) {
 	FVector newRight = RootComponent->GetRightVector().RotateAngleAxis(5 * rate, RootComponent->GetUpVector());
 	FVector newForward = RootComponent->GetForwardVector().RotateAngleAxis(5 * rate, RootComponent->GetUpVector());
 	RootComponent->SetWorldTransform(FTransform(newForward, newRight, RootComponent->GetUpVector(), GetActorLocation()));
 }
-void AMyPawn::LookUpAtRate(float rate) {
+void APlayerPawn::LookUpAtRate(float rate) {
 	//MyCamera->SetRelativeRotation(MyCamera->RelativeRotation + FRotator(-rate, 0, 0));
 	float addrot = 5 * rate;
 
@@ -241,7 +241,7 @@ void AMyPawn::LookUpAtRate(float rate) {
 
 	//MyCamera->SetRelativeRotation(FRotator(FMath::ClampAngle(MyCamera->RelativeRotation.Pitch - 5 * rate, -90, 90), MyCamera->RelativeRotation.Yaw, MyCamera->RelativeRotation.Roll));
 }
-void AMyPawn::Sprint() {
+void APlayerPawn::Sprint() {
 	FHitResult outHit;
 	FCollisionQueryParams params;
 	params.AddIgnoredActor(this);
@@ -271,11 +271,11 @@ void AMyPawn::Sprint() {
 		bBufferSprint = true;
 	}
 }
-void AMyPawn::StopSprinting() {
+void APlayerPawn::StopSprinting() {
 	bSprint = false;
 	bBufferSprint = false;
 }
-void AMyPawn::CrouchControl() {
+void APlayerPawn::CrouchControl() {
 	if (bCrouch) {
 		StopCrouching();
 	}
@@ -283,7 +283,7 @@ void AMyPawn::CrouchControl() {
 		Crouch();
 	}
 }
-void AMyPawn::Crouch() {
+void APlayerPawn::Crouch() {
 	StopSprinting();
 	bCrouch = true;
 	startHeight = currentHeight;
@@ -291,7 +291,7 @@ void AMyPawn::Crouch() {
 	ShadowSneak = false;
 	GetAddHeight();
 }
-void AMyPawn::StopCrouching() {
+void APlayerPawn::StopCrouching() {
 	if (ShadowSneak) {
 		StartEndSneak();
 	}
@@ -309,16 +309,16 @@ void AMyPawn::StopCrouching() {
 		bCrouch = false;
 	}
 }
-void AMyPawn::Jump() {
+void APlayerPawn::Jump() {
 	MovementComp->Jump();
 	if (ShadowSneak) {
 		StartEndSneak();
 	}
 }
-void AMyPawn::StopJumping() {
+void APlayerPawn::StopJumping() {
 
 }
-void AMyPawn::StartEndSneak() {
+void APlayerPawn::StartEndSneak() {
 	FHitResult outHit;
 	FCollisionQueryParams params;
 	params.AddIgnoredActor(this);
@@ -346,7 +346,7 @@ void AMyPawn::StartEndSneak() {
 	GetAddHeight();
 	MovementComp->Shadow = ShadowSneak;
 }
-void AMyPawn::RootCollision(class UPrimitiveComponent* HitComp, class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+void APlayerPawn::RootCollision(class UPrimitiveComponent* HitComp, class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
 	UCapsuleComponent* Capsule = Cast<UCapsuleComponent>(HitComp);
 	if (Capsule) {
@@ -364,11 +364,11 @@ void AMyPawn::RootCollision(class UPrimitiveComponent* HitComp, class AActor* Ot
 	}*/
 }
 
-void AMyPawn::RootCollisionExit(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+void APlayerPawn::RootCollisionExit(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
 }
 
-void AMyPawn::RootHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, FVector NormalImpulse, const FHitResult& SweepResult)
+void APlayerPawn::RootHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, FVector NormalImpulse, const FHitResult& SweepResult)
 {
 	UCapsuleComponent* Capsule = Cast<UCapsuleComponent>(HitComponent);
 	if (Capsule) {
@@ -402,20 +402,20 @@ void AMyPawn::RootHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPr
 				MovementComp->AddInputVector(RootComponent->GetUpVector() * 100);
 			}
 		}
-		
+
 	}
 }
 
-bool AMyPawn::CheckGrounded() {
+bool APlayerPawn::CheckGrounded() {
 	return ShadowSneak ? MovementComp->CheckGrounded() : Grounded >= 1;
 }
 
-void AMyPawn::GetAddHeight() {
+void APlayerPawn::GetAddHeight() {
 	addHeight = (endHeight - startHeight) / HeightInterpTime / (FMath::Abs(startHeight - endHeight) / (normalHeight - crouchHeight));
 	UCapsuleComponent* A = Cast<UCapsuleComponent>(RootComponent);
 }
 
-AMyPawn::Visibility AMyPawn::PStealth(FVector location, float Attenuation, float candelas) {
+APlayerPawn::Visibility APlayerPawn::PStealth(FVector location, float Attenuation, float candelas) {
 	float mult = 0;
 	Visibility ReturnVis;
 	FHitResult outHit;
@@ -458,7 +458,7 @@ AMyPawn::Visibility AMyPawn::PStealth(FVector location, float Attenuation, float
 	ReturnVis.Vis = (2 * PI * (1 - FMath::Cos(PI)) * candelas * 10000) / (4 * PI * FMath::Pow((Start - End).Size(), 2)) * mult;
 	return ReturnVis;
 }
-AMyPawn::Visibility AMyPawn::SStealth(FVector Spotlight, float inner, float outer, float Attenuation, FVector SpotAngle, float candelas) {
+APlayerPawn::Visibility APlayerPawn::SStealth(FVector Spotlight, float inner, float outer, float Attenuation, FVector SpotAngle, float candelas) {
 	Visibility ReturnVis;
 	float mult = 0;
 	float angle;
@@ -509,7 +509,7 @@ AMyPawn::Visibility AMyPawn::SStealth(FVector Spotlight, float inner, float oute
 	}
 	return ReturnVis;
 }
-AMyPawn::Visibility AMyPawn::DStealth(FVector Direction, float intensity, float length) {
+APlayerPawn::Visibility APlayerPawn::DStealth(FVector Direction, float intensity, float length) {
 	Visibility ReturnVis;
 	float mult = 0;
 	UCapsuleComponent* Capsule = Cast<UCapsuleComponent>(RootComponent);
@@ -544,15 +544,15 @@ AMyPawn::Visibility AMyPawn::DStealth(FVector Direction, float intensity, float 
 	ReturnVis.Vis = FMath::Square(mult * intensity);
 	return ReturnVis;
 }
-void AMyPawn::AddVis(Visibility vis) {
+void APlayerPawn::AddVis(Visibility vis) {
 	MyVis.Vis += vis.Vis;
 	MyVis.GroundVis += vis.GroundVis;
 }
-void AMyPawn::SubVis(Visibility vis) {
+void APlayerPawn::SubVis(Visibility vis) {
 	MyVis.Vis -= vis.Vis;
 	MyVis.GroundVis -= vis.GroundVis;
 }
-float AMyPawn::GetCapsuleVisibleArea() {
+float APlayerPawn::GetCapsuleVisibleArea() {
 	UCapsuleComponent* Capsule = Cast<UCapsuleComponent>(RootComponent);
 	if (Capsule) {
 		return 2 * Capsule->GetScaledCapsuleRadius() * Capsule->GetScaledCapsuleHalfHeight_WithoutHemisphere() + PI * FMath::Pow(Capsule->GetScaledCapsuleRadius(), 2);
