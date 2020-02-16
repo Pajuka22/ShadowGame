@@ -16,7 +16,12 @@
 #include "TimerManager.h"
 
 ALostOneAI::ALostOneAI() {
+	//PerceptionComponent = GetPerceptionComponent();
+	//GetPerceptionComponent()->OnTargetPerceptionUpdated.AddDynamic(this, &ALostOneAI::OnTargetPerceptionUpdated);
+
+	//creating perception components
 	SightConfig = CreateDefaultSubobject<UAISenseConfig_Sight>(TEXT("SightConfig"));
+	//end perception component creation
 
 	//sight config
 	SightConfig->PeripheralVisionAngleDegrees = SightAngle;
@@ -27,13 +32,19 @@ ALostOneAI::ALostOneAI() {
 
 }
 void ALostOneAI::BeginPlay() {
-
+	Super::BeginPlay();
 }
 void ALostOneAI::Tick(float DeltaTime) {
 
+	Super::Tick(DeltaTime);
+	ALostOne* Character = Cast<ALostOne>(GetPawn());
+	if (Character != nullptr) {
+		GEngine->AddOnScreenDebugMessage(-1, 0.5f, FColor::Magenta, "MOVE BITCH");
+		MoveToActor(Character->Destination, 50, true, true, true, 0, true);
+	}
 }
 void ALostOneAI::OnPossess(APawn* InPawn) {
-	MoveToLocation(FVector(0, 0, 0), 50, true, false);
+	Super::OnPossess(InPawn);
 }
 FRotator ALostOneAI::GetControlRotation() const{
 	return FRotator(0, 0, 0);
@@ -41,6 +52,6 @@ FRotator ALostOneAI::GetControlRotation() const{
 
 void ALostOneAI::OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus)
 {
-
+	GEngine->AddOnScreenDebugMessage(-1, 0.2f, FColor::Green, "Saw You");
 }
 

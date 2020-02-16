@@ -2,6 +2,7 @@
 
 
 #include "LostOne.h"
+#include "LostOneAI.h"
 
 // Sets default values
 ALostOne::ALostOne()
@@ -22,7 +23,6 @@ void ALostOne::BeginPlay()
 void ALostOne::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-
 }
 
 // Called to bind functionality to input
