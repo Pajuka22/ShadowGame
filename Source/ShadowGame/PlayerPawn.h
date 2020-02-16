@@ -84,7 +84,7 @@ public:
 
 	FVector FloorNormal;
 	UPROPERTY(EditAnywhere)
-	float MaxHP;
+		float MaxHP;
 
 	float CurrentHP;
 

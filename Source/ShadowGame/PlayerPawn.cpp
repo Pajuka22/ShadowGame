@@ -402,7 +402,7 @@ void APlayerPawn::RootHit(UPrimitiveComponent* HitComponent, AActor* OtherActor,
 				MovementComp->AddInputVector(RootComponent->GetUpVector() * 100);
 			}
 		}
-		
+
 	}
 }
 
