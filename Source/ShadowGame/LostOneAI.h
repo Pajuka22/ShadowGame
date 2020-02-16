@@ -34,6 +34,8 @@ public:
 		float LoseSightDistance = SightDistance + 50;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = AISight)
 		float SightMaxAge = 5;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = AISight)
+		class UAISenseConfig_Sight *SightConfig;
 private:
 
 	

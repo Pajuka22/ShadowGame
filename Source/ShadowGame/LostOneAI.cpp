@@ -16,6 +16,14 @@
 #include "TimerManager.h"
 
 ALostOneAI::ALostOneAI() {
+	SightConfig = CreateDefaultSubobject<UAISenseConfig_Sight>(TEXT("SightConfig"));
+
+	//sight config
+	SightConfig->PeripheralVisionAngleDegrees = SightAngle;
+	SightConfig->SightRadius = SightDistance;
+	SightConfig->LoseSightRadius = LoseSightDistance;
+	SightConfig->SetMaxAge(SightMaxAge);
+	//end sight config
 
 }
 void ALostOneAI::BeginPlay() {
@@ -25,10 +33,10 @@ void ALostOneAI::Tick(float DeltaTime) {
 
 }
 void ALostOneAI::OnPossess(APawn* InPawn) {
-
+	MoveToLocation(FVector(0, 0, 0), 50, true, false);
 }
 FRotator ALostOneAI::GetControlRotation() const{
-
+	return FRotator(0, 0, 0);
 }
 
 void ALostOneAI::OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus)
