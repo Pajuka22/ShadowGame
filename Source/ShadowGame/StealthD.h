@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "MyPawn.h"
+#include "PlayerPawn.h"
 #include "StealthD.generated.h"
 UCLASS()
 class SHADOWGAME_API AStealthD : public AActor
@@ -15,7 +15,7 @@ public:
 	// Sets default values for this actor's properties
 	AStealthD();
 
-	class AMyPawn* Player;
+	class APlayerPawn* Player;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 		class UDirectionalLightComponent* Source;
@@ -24,7 +24,7 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 	bool HitLast = false;
-	AMyPawn::Visibility value;
+	APlayerPawn::Visibility value;
 
 public:
 	// Called every frame

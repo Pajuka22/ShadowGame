@@ -5,7 +5,7 @@
 #include "Runtime/Engine/Classes/Components/SpotLightComponent.h"
 #include "Runtime/Engine/Classes/Engine/Scene.h"
 #include "Engine/World.h"
-#include "MyPawn.h"
+#include "PlayerPawn.h"
 // Sets default values
 AStealthS::AStealthS()
 {
@@ -27,7 +27,7 @@ void AStealthS::BeginPlay()
 void AStealthS::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	AMyPawn* Player = Cast<AMyPawn>(GetWorld()->GetFirstPlayerController()->GetPawn());
+	APlayerPawn* Player = Cast<APlayerPawn>(GetWorld()->GetFirstPlayerController()->GetPawn());
 	if (HitLast) {
 		Player->SubVis(value);
 	}
