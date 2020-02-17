@@ -113,6 +113,9 @@ protected:
 
 	float FloorAngle;
 
+	UPROPERTY(EditAnywhere, Category = PerceptionComp)
+		class UAIPerceptionStimuliSourceComponent* PerceptionStimulus;
+
 	UFUNCTION()
 		void RootCollision(class UPrimitiveComponent* HitComp, class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 	UFUNCTION()

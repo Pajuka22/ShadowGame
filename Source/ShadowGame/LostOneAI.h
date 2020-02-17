@@ -26,10 +26,13 @@ public:
 	UFUNCTION()
 		void OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus);
 
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = PerceptionComp)
+		class UAIPerceptionComponent* PerceptionComp;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = AISight)
 		float SightAngle = 60;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = AISight)
-		float SightDistance = 100;
+		float SightDistance = 700;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = AISight)
 		float LoseSightDistance = SightDistance + 50;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = AISight)

@@ -26,9 +26,6 @@ ALostOneAI::ALostOneAI() {
 	SightConfig->SightRadius = SightDistance;
 	SightConfig->LoseSightRadius = LoseSightDistance;
 	SightConfig->SetMaxAge(SightMaxAge);
-	SightConfig->DetectionByAffiliation.bDetectEnemies = true;
-	SightConfig->DetectionByAffiliation.bDetectFriendlies = true;
-	SightConfig->DetectionByAffiliation.bDetectNeutrals = true;
 	//end sight config
 
 	SetPerceptionComponent(*PerceptionComp);
