@@ -25,6 +25,12 @@ public:
 
 	UFUNCTION()
 		void OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus);
+	UFUNCTION(BlueprintCallable)
+		void SendTeamRequest(ALostOneAI OtherLostOne, APawn Target, ALostOneAI Leader, float DangerLevel);
+	UFUNCTION(BlueprintCallable)
+		bool ReceiveTeamRequest(ALostOneAI OtherLostOne, APawn Target, ALostOneAI Leader, float DangerLevel);
+	UFUNCTION(BlueprintCallable)
+		void ReceiveTeamResponse(ALostOneAI OtherlostOne, bool Affirmative);
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = PerceptionComp)
 		class UAIPerceptionComponent* PerceptionComp;
@@ -40,6 +46,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = AISight)
 		class UAISenseConfig_Sight *SightConfig;
 private:
+	bool HasInput;
+	float InputPriority;
+	FVector LastInput;
 
 	
 };

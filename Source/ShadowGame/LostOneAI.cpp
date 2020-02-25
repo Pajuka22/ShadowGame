@@ -14,6 +14,7 @@
 #include "Perception/AISense.h"
 #include "Perception/AISense_Touch.h"
 #include "TimerManager.h"
+#include "PlayerPawn.h"
 
 ALostOneAI::ALostOneAI() {
 	PerceptionComp = CreateDefaultSubobject<UAIPerceptionComponent>(TEXT("Perception Component"));
@@ -64,6 +65,16 @@ FRotator ALostOneAI::GetControlRotation() const{
 
 void ALostOneAI::OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus)
 {
-	GEngine->AddOnScreenDebugMessage(-1, 2, FColor::Green, "Saw You");
+	if (Stimulus.Type == UAISense::GetSenseID<UAISense_Sight>()) {
+		if (Stimulus.WasSuccessfullySensed()) {
+			GEngine->AddOnScreenDebugMessage(-1, 2, FColor::Green, "Saw You");
+			if (Cast<APlayerPawn>(Actor) != nullptr) {
+
+			}
+		}
+		else {
+
+		}
+	}
 }
 
