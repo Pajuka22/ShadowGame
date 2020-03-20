@@ -41,7 +41,7 @@ void ALostOneAI::BeginPlay() {
 	Super::BeginPlay();
 	if (PerceptionComp) {
 		PerceptionComp->OnTargetPerceptionUpdated.AddDynamic(this, &ALostOneAI::OnTargetPerceptionUpdated);
-		GEngine->AddOnScreenDebugMessage(-1, 5, FColor::Green, "All Systems Go");
+		//GEngine->AddOnScreenDebugMessage(-1, 5, FColor::Green, "All Systems Go");
 	}
 }
 void ALostOneAI::Tick(float DeltaTime) {
@@ -51,6 +51,13 @@ void ALostOneAI::Tick(float DeltaTime) {
 	if (Character != nullptr) {
 		//GEngine->AddOnScreenDebugMessage(-1, 0.5f, FColor::Magenta, "MOVE BITCH");
 		MoveToActor(Character->Destination, 50, true, true, true, 0, true);
+	}
+	if (Cast<APlayerPawn>(Target) != nullptr) {
+		APlayerPawn* Player = Cast<APlayerPawn>(Target);
+		if (HasSight) {
+			AddSus(VisStimStrengthLight(Player->MyVis.GroundVis * DeltaTime * SightSusPerSecond, (Player->GetActorLocation() - GetPawn()->GetActorLocation()).Size()));
+			GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Magenta, "Suspicion: " + FString::SanitizeFloat(Suspicion));
+		}
 	}
 }
 void ALostOneAI::OnPossess(APawn* InPawn) {
@@ -63,18 +70,44 @@ FRotator ALostOneAI::GetControlRotation() const{
 	return GetPawn()->GetActorRotation();
 }
 
+float ALostOneAI::VisStimStrengthLight(float Illumination, float Distance)
+{
+	return FMath::Sqrt(Illumination) / Distance * 100;
+}
+
 void ALostOneAI::OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus)
 {
 	if (Stimulus.Type == UAISense::GetSenseID<UAISense_Sight>()) {
+		APlayerPawn* PlayerPawn = Cast<APlayerPawn>(Actor);
 		if (Stimulus.WasSuccessfullySensed()) {
 			GEngine->AddOnScreenDebugMessage(-1, 2, FColor::Green, "Saw You");
-			if (Cast<APlayerPawn>(Actor) != nullptr) {
-
+			//Target = Actor;
+			if (Cast<APlayerPawn>(Actor) != nullptr && Cast<APlayerController>(PlayerPawn->GetController()) != nullptr) {
+				HasSight = true;
+				Target = PlayerPawn;
 			}
 		}
 		else {
-
+			HasSight = false;
 		}
 	}
+}
+
+void ALostOneAI::AddSus(float sus) {
+	Suspicion += sus;
+}
+void ALostOneAI::SendTeamRequest(ALostOneAI* OtherLostOne, APawn* Target, ALostOneAI* Leader, float DangerLevel)
+{
+
+}
+
+bool ALostOneAI::ReceiveTeamRequest(ALostOneAI* OtherLostOne, APawn* Target, ALostOneAI* Leader, float DangerLevel)
+{
+	return false;
+}
+
+void ALostOneAI::ReceiveTeamResponse(ALostOneAI* OtherlostOne, bool Affirmative)
+{
+
 }
 
