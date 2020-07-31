@@ -54,7 +54,7 @@ void UCustomMovement::TickComponent(float DeltaTime, enum ELevelTick TickType, F
 	LateralVel = FVector(0, 0, 0);
 
 	FHitResult outHit;
-	downVel += (Shadow ? UpdatedComponent->GetUpVector() : FVector::UpVector) * -30 * DeltaTime;
+	downVel += (Shadow ? Pawn->DesiredUp : FVector::UpVector) * -30 * DeltaTime;
 	DesiredMovementThisFrame += downVel;
 
 	if (CheckGrounded() && !Jumping) {

@@ -28,7 +28,8 @@ void ALostOneAI::OnPossess(APawn* InPawn) {
 
 }
 FRotator ALostOneAI::GetControlRotation() const{
-
+	FRotator rot = FRotator(0, 0, 0);
+	return rot;
 }
 
 void ALostOneAI::OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus)

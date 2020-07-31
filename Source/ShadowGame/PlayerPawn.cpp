@@ -134,7 +134,33 @@ void APlayerPawn::Tick(float DeltaTime)
 		FVector under;
 		FVector Start = GetActorLocation();
 		FVector End = Start + GetVelocity();
-		if (GetWorld()->LineTraceSingleByChannel(hitResultTrace, GetActorLocation(), GetActorLocation() - RootComponent->GetUpVector() * 100,
+		if (Grounded > 0) {
+			under = FloorHitPos;
+			FVector newUp = FloorNormal;
+			FVector newForward = FVector::CrossProduct(RootComponent->GetRightVector(), newUp);
+			FVector newRight = FVector::CrossProduct(newUp, newForward);
+			//Build the new transform!
+			FTransform newTransform = FTransform(newForward, newRight, newUp, GetActorLocation());
+			//RootComponent->SetWorldRotation(FMath::Lerp(RootComponent->GetComponentRotation().Quaternion(), newTransform.GetRotation(), .08));
+			DesiredUp.Normalize();
+			newUp.Normalize();
+			if (DesiredUp != newUp) {
+				GEngine->AddOnScreenDebugMessage(-1, 1, FColor::Red, FloorNormal.ToString());
+				ResetQuatLerp(.04);
+				DesiredUp = newUp;
+			}
+			DoQuatLerp();
+			RootComponent->SetWorldRotation(newTransform.GetRotation());
+			UCapsuleComponent* capsule = Cast<UCapsuleComponent>(RootComponent);
+			if (capsule) {
+				//RootComponent->SetWorldLocation(under + newUp * capsule->GetScaledCapsuleHalfHeight);
+			}
+			else {
+				RootComponent->SetWorldLocation(under + newUp * 100);
+			}
+			//GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::Blue, FString::SanitizeFloat(QuatLerp));
+		}
+		/*if (GetWorld()->LineTraceSingleByChannel(hitResultTrace, GetActorLocation(), GetActorLocation() - RootComponent->GetUpVector() * 100,
 			ECC_Visibility, queryParams))
 		{
 			if (hitResultTrace.GetComponent() != nullptr) {
@@ -145,7 +171,15 @@ void APlayerPawn::Tick(float DeltaTime)
 					FVector newRight = FVector::CrossProduct(newUp, newForward);
 					//Build the new transform!
 					FTransform newTransform = FTransform(newForward, newRight, newUp, GetActorLocation());
-					RootComponent->SetWorldRotation(FMath::Lerp(RootComponent->GetComponentRotation().Quaternion(), newTransform.GetRotation(), .08));
+					//RootComponent->SetWorldRotation(FMath::Lerp(RootComponent->GetComponentRotation().Quaternion(), newTransform.GetRotation(), .08));
+					if (DesiredUp != newUp) {
+						GEngine->AddOnScreenDebugMessage(-1, 1, FColor::Red, "BITCH");
+						ResetQuatLerp(.04);
+						DesiredUp = newUp;
+					}
+					DoQuatLerp();
+					RootComponent->SetWorldRotation(FMath::Lerp(RootComponent->GetComponentRotation().Quaternion(), newTransform.GetRotation(), QuatLerp));
+					//GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::Blue, FString::SanitizeFloat(QuatLerp));
 					UCapsuleComponent* capsule = Cast<UCapsuleComponent>(RootComponent);
 					if (capsule) {
 						//RootComponent->SetWorldLocation(under + newUp * capsule->GetScaledCapsuleHalfHeight);
@@ -162,7 +196,14 @@ void APlayerPawn::Tick(float DeltaTime)
 				FVector newRight = FVector::CrossProduct(newUp, newForward);
 				//Build the new transform!
 				FTransform newTransform = FTransform(newForward, newRight, newUp, GetActorLocation());
-				RootComponent->SetWorldRotation(FMath::Lerp(RootComponent->GetComponentRotation().Quaternion(), newTransform.GetRotation(), .05));
+				if (DesiredUp == newUp) {
+					GEngine->AddOnScreenDebugMessage(-1, 1, FColor::Blue, "ASS");
+					ResetQuatLerp(0.01);
+					DesiredUp = newUp;
+				}
+				DoQuatLerp();
+				RootComponent->SetWorldRotation(FMath::Lerp(RootComponent->GetComponentRotation().Quaternion(), newTransform.GetRotation(), QuatLerp));
+				GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::Blue, FString::SanitizeFloat(QuatLerp));
 			}
 		}
 		if (!CheckGrounded()) {
@@ -172,7 +213,7 @@ void APlayerPawn::Tick(float DeltaTime)
 				StartEndSneak();
 			}
 
-		}
+		}*/
 	}
 	else {
 		if (RootComponent->GetUpVector() != FVector(0, 0, 1)) {
@@ -181,13 +222,31 @@ void APlayerPawn::Tick(float DeltaTime)
 			FVector newRight = FVector::CrossProduct(newUp, newForward);
 			//Build the new transform!
 			FTransform newTransform = FTransform(newForward, newRight, newUp, GetActorLocation());
-			RootComponent->SetWorldRotation(FMath::Lerp(RootComponent->GetComponentRotation().Quaternion(), newTransform.GetRotation(), .05));
+			/*if (DesiredUp == newUp) {
+				GEngine->AddOnScreenDebugMessage(-1, 1, FColor::Red, "CUNT");
+				ResetQuatLerp(0.08);
+				GEngine->AddOnScreenDebugMessage(-1, 1, FColor::Blue, DesiredUp.ToString());
+				DesiredUp = newUp;
+			}*/
+			DoQuatLerp();
+			RootComponent->SetWorldRotation(FMath::Lerp(RootComponent->GetComponentRotation().Quaternion(), newTransform.GetRotation(), QuatLerp));
 		}
 	}
 	Grounded = 0;
 	FloorAngle = 2 * PI;
 }
-
+void APlayerPawn::ResetQuatLerp(float interval) {
+	QuatLerpInterval = interval;
+	QuatLerp = 0;
+}
+void APlayerPawn::DoQuatLerp() {
+	if (QuatLerp + QuatLerpInterval >= 1) {
+		QuatLerp = 1;
+	}
+	else {
+		QuatLerp += QuatLerpInterval;
+	}
+}
 // Called to bind functionality to input
 void APlayerPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
@@ -339,6 +398,14 @@ void APlayerPawn::StartEndSneak() {
 	}
 	else {
 		endHeight = bCrouch ? crouchHeight : normalHeight;
+		FVector newUp = FVector(0, 0, 1);
+		FVector newForward = FVector::CrossProduct(RootComponent->GetRightVector(), newUp);
+		FVector newRight = FVector::CrossProduct(newUp, newForward);
+		//Build the new transform!
+		FTransform newTransform = FTransform(newForward, newRight, newUp, GetActorLocation());
+		GEngine->AddOnScreenDebugMessage(-1, 1, FColor::Red, "CUNT");
+		ResetQuatLerp(0.08);
+		DesiredUp = newUp;
 		/*GetWorld()->LineTraceSingleByChannel(outHit, GetActorLocation(),
 			GetActorLocation() + RootComponent->GetUpVector() * (normalHeight + (endHeight - currentHeight)), ECC_Visibility, params);
 		endHeight = outHit.bBlockingHit ? currentHeight : endHeight;*/
@@ -393,9 +460,10 @@ void APlayerPawn::RootHit(UPrimitiveComponent* HitComponent, AActor* OtherActor,
 			>= FMath::Sin(25 * PI / 180) * Capsule->GetScaledCapsuleRadius()) {
 			DrawDebugLine(GetWorld(), SweepResult.ImpactPoint + 100 * SweepResult.ImpactNormal, SweepResult.ImpactPoint, FColor::Green, false, 1, 0, 1);
 			Grounded++;
-			FVector ThisNorm = -SweepResult.ImpactNormal;
+			FVector ThisNorm = SweepResult.ImpactNormal;
 			if (ThisNorm.RadiansToVector(-HitComponent->GetUpVector()) < FloorAngle) {
 				FloorNormal = ThisNorm;
+				FloorHitPos = SweepResult.ImpactPoint;
 				FloorAngle = ThisNorm.RadiansToVector(-HitComponent->GetUpVector());
 			}
 			if ((-ThisNorm).RadiansToVector(RootComponent->GetUpVector()) >= FMath::DegreesToRadians(85)) {

@@ -72,6 +72,7 @@ public:
 		float Vis;
 		float GroundVis;
 	};
+	FVector DesiredUp = FVector::UpVector;
 
 	Visibility  DStealth(FVector angle, float magnitude, float length);
 	Visibility SStealth(FVector spotlight, float inner, float outer, float Attenuation, FVector spotAngle, float Candelas);
@@ -83,6 +84,7 @@ public:
 	float GetCapsuleVisibleArea();
 
 	FVector FloorNormal;
+	FVector FloorHitPos;
 	UPROPERTY(EditAnywhere)
 		float MaxHP;
 
@@ -110,6 +112,12 @@ protected:
 	void StopCrouching();
 	void BufferEndCrouch();
 	void GetAddHeight();
+
+	float QuatLerp;
+	float QuatLerpInterval;
+	void ResetQuatLerp(float interval);
+	void DoQuatLerp();
+	FTransform DesiredTransform;
 
 	float FloorAngle;
 

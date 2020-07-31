@@ -1,14 +1,10 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
-
 #include "CoreMinimal.h"
 #include "GameFramework/PawnMovementComponent.h"
 #include "CustomMovement.generated.h"
 
-/**
- *
- */
 UCLASS()
 class SHADOWGAME_API UCustomMovement : public UPawnMovementComponent
 {
