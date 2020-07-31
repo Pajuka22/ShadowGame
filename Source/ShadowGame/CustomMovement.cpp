@@ -54,8 +54,7 @@ void UCustomMovement::TickComponent(float DeltaTime, enum ELevelTick TickType, F
 	LateralVel = FVector(0, 0, 0);
 
 	FHitResult outHit;
-	downVel += (Shadow ? Pawn->DesiredUp : FVector::UpVector) * -30 * DeltaTime;
-	DesiredMovementThisFrame += downVel;
+	downVel += (Shadow ? Pawn->FloorNormal : FVector::UpVector) * -30 * DeltaTime;
 
 	if (CheckGrounded() && !Jumping) {
 		float angle = FMath::RadiansToDegrees(Pawn->FloorNormal.RadiansToVector(-Capsule->GetUpVector()));
@@ -64,6 +63,7 @@ void UCustomMovement::TickComponent(float DeltaTime, enum ELevelTick TickType, F
 			downVel = FVector(0, 0, 0);
 		//}
 	}
+	DesiredMovementThisFrame += downVel;
 	if (!DesiredMovementThisFrame.IsNearlyZero())
 	{
 		SafeMoveUpdatedComponent(DesiredMovementThisFrame, UpdatedComponent->GetComponentRotation(), true, outHit);

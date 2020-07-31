@@ -134,7 +134,7 @@ void APlayerPawn::Tick(float DeltaTime)
 		FVector under;
 		FVector Start = GetActorLocation();
 		FVector End = Start + GetVelocity();
-		if (Grounded > 0) {
+		/*if (Grounded > 0) {
 			under = FloorHitPos;
 			FVector newUp = FloorNormal;
 			FVector newForward = FVector::CrossProduct(RootComponent->GetRightVector(), newUp);
@@ -159,8 +159,8 @@ void APlayerPawn::Tick(float DeltaTime)
 				RootComponent->SetWorldLocation(under + newUp * 100);
 			}
 			//GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::Blue, FString::SanitizeFloat(QuatLerp));
-		}
-		/*if (GetWorld()->LineTraceSingleByChannel(hitResultTrace, GetActorLocation(), GetActorLocation() - RootComponent->GetUpVector() * 100,
+		}*/
+		if (GetWorld()->LineTraceSingleByChannel(hitResultTrace, GetActorLocation(), GetActorLocation() - RootComponent->GetUpVector() * 100,
 			ECC_Visibility, queryParams))
 		{
 			if (hitResultTrace.GetComponent() != nullptr) {
@@ -213,7 +213,7 @@ void APlayerPawn::Tick(float DeltaTime)
 				StartEndSneak();
 			}
 
-		}*/
+		}
 	}
 	else {
 		if (RootComponent->GetUpVector() != FVector(0, 0, 1)) {
