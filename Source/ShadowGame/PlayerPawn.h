@@ -6,6 +6,9 @@
 #include "GameFramework/Pawn.h"
 #include "PlayerPawn.generated.h"
 
+UENUM()
+enum MovementSpeeds { Normal, Crouching, Sprinting, Sneaking };
+
 UCLASS()
 class SHADOWGAME_API APlayerPawn : public APawn
 {
@@ -13,7 +16,6 @@ class SHADOWGAME_API APlayerPawn : public APawn
 public:
 	// Sets default values for this pawn's properties
 	APlayerPawn();
-	enum MovementSpeeds{Normal, Crouch, Sprint, Sneak};
 	MovementSpeeds speed = MovementSpeeds::Normal;
 
 protected:
@@ -63,6 +65,7 @@ public:
 		float WalkCurveEndLoop = 3;
 
 	bool CheckGrounded();
+	bool CheckGroundedLastFrame();
 
 	bool ShadowSneak;
 	int Grounded;
@@ -92,6 +95,8 @@ public:
 
 	float CurrentHP;
 
+
+	
 protected:
 	float CurveTime = 0;
 	float startHeight;

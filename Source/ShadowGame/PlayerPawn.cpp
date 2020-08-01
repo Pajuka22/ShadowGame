@@ -71,14 +71,16 @@ void APlayerPawn::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 
 	MovementComp->GroundNum = Grounded;
+	//GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Magenta, FString::SanitizeFloat((float)Grounded));
+	GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Magenta, "Fuck You");
 	MovementComp->Velocity = FVector();
 	SetActorRotation(GetActorRotation() + FRotator(0, 0, 0));
 	//DrawDebugLine(GetWorld(), GetActorLocation(), GetActorLocation() + 100 * RootComponent->GetUpVector(), FColor::Red, false, 5.f, 0, 1);
 	if (bBufferSprint) {
 		Sprint();
 	}
-	GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Red, FString::SanitizeFloat(FMath::Sqrt(MyVis.GroundVis)));
-	GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Red, FString::SanitizeFloat(FMath::Sqrt(MyVis.Vis)));
+	//GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Red, FString::SanitizeFloat(FMath::Sqrt(MyVis.GroundVis)));
+	//GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Red, FString::SanitizeFloat(FMath::Sqrt(MyVis.Vis)));
 	GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Red, FString::SanitizeFloat(currentHeight));
 	GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Orange, MovementComp->Jumping ? "true" : "false");
 
@@ -304,36 +306,45 @@ void APlayerPawn::Sprint() {
 	FHitResult outHit;
 	FCollisionQueryParams params;
 	params.AddIgnoredActor(this);
-	if (CheckGrounded()) {
+	if (MovementComp->CheckGrounded()) {
 		startHeight = currentHeight;
 		endHeight = normalHeight;
-
 		GetWorld()->LineTraceSingleByChannel(outHit, GetActorLocation(),
-			GetActorLocation() + RootComponent->GetUpVector() * (normalHeight + (normalHeight - currentHeight)), ECC_Visibility, params);
-		if (outHit.bBlockingHit) {
+			GetActorLocation() + RootComponent->GetUpVector() * (normalHeight), ECC_Visibility, params);
+		if (!outHit.bBlockingHit) {
+			GEngine->AddOnScreenDebugMessage(-1, 2, FColor::Purple, "Sprint");
 			bBufferSprint = false;
 			bSprint = true;
 			GetAddHeight();
-			if (ShadowSneak) {
-				StartEndSneak();
+			switch (speed) {
+			case MovementSpeeds::Crouching:
+
+				break;
+			case MovementSpeeds::Sneaking:
+				ShadowSneak = false;
+				break;
+			default:
+
+				break;
 			}
-			if (bCrouch) {
-				StopCrouching();
-			}
-			bCrouch = false;
+			speed = MovementSpeeds::Sprinting;
 		}
 		else {
 			endHeight = currentHeight;
 			bBufferSprint = true;
+			GEngine->AddOnScreenDebugMessage(-1, 2, FColor::Orange, "Sprint");
 		}
 	}
 	else {
 		bBufferSprint = true;
+		GEngine->AddOnScreenDebugMessage(-1, 2, FColor::Yellow, "Sprint");
 	}
 }
 void APlayerPawn::StopSprinting() {
+	GEngine->AddOnScreenDebugMessage(-1, 2, FColor::Orange, "End Sprint");
 	bSprint = false;
 	bBufferSprint = false;
+	speed = MovementSpeeds::Normal;
 }
 void APlayerPawn::CrouchControl() {
 	if (bCrouch) {
@@ -349,6 +360,7 @@ void APlayerPawn::Crouch() {
 	startHeight = currentHeight;
 	endHeight = crouchHeight;
 	ShadowSneak = false;
+	speed = MovementSpeeds::Crouching;
 	GetAddHeight();
 }
 void APlayerPawn::StopCrouching() {
@@ -367,6 +379,7 @@ void APlayerPawn::StopCrouching() {
 		endHeight = ShadowSneak ? sneakHeight : normalHeight;
 		GetAddHeight();
 		bCrouch = false;
+		speed = MovementSpeeds::Normal;
 	}
 }
 void APlayerPawn::Jump() {
@@ -396,6 +409,7 @@ void APlayerPawn::StartEndSneak() {
 		else {
 			ShadowSneak = false;
 		}
+		speed = MovementSpeeds::Sneaking;
 	}
 	else {
 		endHeight = bCrouch ? crouchHeight : normalHeight;
@@ -407,6 +421,7 @@ void APlayerPawn::StartEndSneak() {
 		GEngine->AddOnScreenDebugMessage(-1, 1, FColor::Red, "CUNT");
 		ResetQuatLerp(0.08);
 		DesiredUp = newUp;
+		speed = MovementSpeeds::Normal;
 		/*GetWorld()->LineTraceSingleByChannel(outHit, GetActorLocation(),
 			GetActorLocation() + RootComponent->GetUpVector() * (normalHeight + (endHeight - currentHeight)), ECC_Visibility, params);
 		endHeight = outHit.bBlockingHit ? currentHeight : endHeight;*/
@@ -462,13 +477,13 @@ void APlayerPawn::RootHit(UPrimitiveComponent* HitComponent, AActor* OtherActor,
 			DrawDebugLine(GetWorld(), SweepResult.ImpactPoint + 100 * SweepResult.ImpactNormal, SweepResult.ImpactPoint, FColor::Green, false, 1, 0, 1);
 			Grounded++;
 			FVector ThisNorm = SweepResult.ImpactNormal;
-			if (ThisNorm.RadiansToVector(-HitComponent->GetUpVector()) < FloorAngle) {
+			if (ThisNorm.RadiansToVector(HitComponent->GetUpVector()) < FloorAngle && ThisNorm.RadiansToVector(HitComponent->GetUpVector()) < PI/2) {
 				FloorNormal = ThisNorm;
 				FloorHitPos = SweepResult.ImpactPoint;
 				FloorAngle = ThisNorm.RadiansToVector(-HitComponent->GetUpVector());
 			}
 			if ((-ThisNorm).RadiansToVector(RootComponent->GetUpVector()) >= FMath::DegreesToRadians(85)) {
-				MovementComp->AddInputVector(RootComponent->GetUpVector() * 100);
+				///MovementComp->AddInputVector(RootComponent->GetUpVector() * 100);
 			}
 		}
 
@@ -477,6 +492,9 @@ void APlayerPawn::RootHit(UPrimitiveComponent* HitComponent, AActor* OtherActor,
 
 bool APlayerPawn::CheckGrounded() {
 	return ShadowSneak ? MovementComp->CheckGrounded() : Grounded >= 1;
+}
+bool APlayerPawn::CheckGroundedLastFrame() {
+	return ShadowSneak ? MovementComp->CheckGrounded() : MovementComp->GroundNum >= 1;
 }
 
 void APlayerPawn::GetAddHeight() {
