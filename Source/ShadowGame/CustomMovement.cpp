@@ -24,6 +24,7 @@ void UCustomMovement::TickComponent(float DeltaTime, enum ELevelTick TickType, F
 		return;
 	}
 	if (EndJump && CanJump()) {
+		GEngine->AddOnScreenDebugMessage(-1, 1 / 60, FColor::Cyan, "End Jump");;
 		JumpVel = FVector(0, 0, 0);
 		EndJump = false;
 		Jumping = false;
@@ -54,14 +55,19 @@ void UCustomMovement::TickComponent(float DeltaTime, enum ELevelTick TickType, F
 	LateralVel = FVector(0, 0, 0);
 
 	FHitResult outHit;
-	downVel += (Shadow ? Pawn->FloorNormal : FVector::UpVector) * -30 * DeltaTime;
+	if (Pawn->ShadowSneak) {
+		downVel += Pawn->GetActorUpVector() * -30 * DeltaTime;
+	}
+	else {
+		downVel += FVector::DownVector * 30 * DeltaTime;
+	}
 
-	if (CheckGrounded() && !Jumping) {
-		float angle = FMath::RadiansToDegrees(Pawn->FloorNormal.RadiansToVector(-Capsule->GetUpVector()));
+	if (CheckGrounded()) {//&& !Jumping
+		float angle = FMath::RadiansToDegrees(Pawn->FloorNormal.RadiansToVector(Capsule->GetUpVector()));
 		GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Purple, FString::SanitizeFloat(angle));
-		//if (angle <= maxAngle) {
+		if (angle <= maxAngle || Pawn->ShadowSneak) {
 			downVel = FVector(0, 0, 0);
-		//}
+		}
 	}
 	DesiredMovementThisFrame += downVel;
 	if (!DesiredMovementThisFrame.IsNearlyZero())
@@ -84,6 +90,7 @@ void UCustomMovement::Jump() {
 }
 bool UCustomMovement::CheckGrounded() {
 	if (Pawn) {
+		
 		FVector Start = GetActorLocation();
 		FVector End = GetActorLocation() - UpdatedComponent->GetUpVector() * (Capsule->GetScaledCapsuleHalfHeight() + 5);
 		//DrawDebugLine(GetWorld(), Start, End, FColor::Red, false, 5.f, 0, 1);

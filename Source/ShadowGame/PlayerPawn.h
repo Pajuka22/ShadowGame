@@ -13,6 +13,8 @@ class SHADOWGAME_API APlayerPawn : public APawn
 public:
 	// Sets default values for this pawn's properties
 	APlayerPawn();
+	enum MovementSpeeds{Normal, Crouch, Sprint, Sneak};
+	MovementSpeeds speed = MovementSpeeds::Normal;
 
 protected:
 	// Called when the game starts or when spawned

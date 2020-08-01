@@ -310,7 +310,7 @@ void APlayerPawn::Sprint() {
 
 		GetWorld()->LineTraceSingleByChannel(outHit, GetActorLocation(),
 			GetActorLocation() + RootComponent->GetUpVector() * (normalHeight + (normalHeight - currentHeight)), ECC_Visibility, params);
-		if (!outHit.bBlockingHit) {
+		if (outHit.bBlockingHit) {
 			bBufferSprint = false;
 			bSprint = true;
 			GetAddHeight();
@@ -320,6 +320,7 @@ void APlayerPawn::Sprint() {
 			if (bCrouch) {
 				StopCrouching();
 			}
+			bCrouch = false;
 		}
 		else {
 			endHeight = currentHeight;
