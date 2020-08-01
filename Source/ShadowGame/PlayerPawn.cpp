@@ -474,10 +474,11 @@ void APlayerPawn::RootHit(UPrimitiveComponent* HitComponent, AActor* OtherActor,
 		}
 		if ((SweepResult.ImpactPoint - (GetActorLocation() - Capsule->GetUpVector() * Capsule->GetScaledCapsuleHalfHeight_WithoutHemisphere())).DistanceInDirection(-Capsule->GetUpVector())
 			>= FMath::Sin(25 * PI / 180) * Capsule->GetScaledCapsuleRadius()) {
-			DrawDebugLine(GetWorld(), SweepResult.ImpactPoint + 100 * SweepResult.ImpactNormal, SweepResult.ImpactPoint, FColor::Green, false, 1, 0, 1);
+			//DrawDebugLine(GetWorld(), SweepResult.ImpactPoint + 100 * SweepResult.ImpactNormal, SweepResult.ImpactPoint, FColor::Green, false, 1, 0, 1);
 			Grounded++;
 			FVector ThisNorm = SweepResult.ImpactNormal;
-			if (ThisNorm.RadiansToVector(HitComponent->GetUpVector()) < FloorAngle && ThisNorm.RadiansToVector(HitComponent->GetUpVector()) < PI/2) {
+			if (ThisNorm.RadiansToVector(HitComponent->GetUpVector()) <= FloorAngle && ThisNorm.RadiansToVector(HitComponent->GetUpVector()) < PI/2) {
+				//DrawDebugLine(GetWorld(), SweepResult.ImpactPoint + 100 * SweepResult.ImpactNormal, SweepResult.ImpactPoint, FColor::Red, false, 1, 0, 1);
 				FloorNormal = ThisNorm;
 				FloorHitPos = SweepResult.ImpactPoint;
 				FloorAngle = ThisNorm.RadiansToVector(-HitComponent->GetUpVector());

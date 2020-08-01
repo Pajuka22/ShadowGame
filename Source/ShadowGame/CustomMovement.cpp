@@ -3,6 +3,7 @@
 #include "Runtime/Engine/Public/CollisionQueryParams.h"
 #include "Components/CapsuleComponent.h"
 #include "PlayerPawn.h"
+#include "Runtime/Engine/Public/DrawDebugHelpers.h"
 
 void UCustomMovement::BeginPlay() {
 	Super::BeginPlay();
@@ -17,6 +18,7 @@ void UCustomMovement::TickComponent(float DeltaTime, enum ELevelTick TickType, F
 	GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Red, CanJump() ? "true" : "false");
 	GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Green, Jumping ? "true" : "false");
 	GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Blue, EndJump ? "true" : "false");
+	//set speeds and add debug messages.
 	switch (Pawn->speed) {
 	case MovementSpeeds::Normal:
 		GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Cyan, "Normal");
@@ -41,50 +43,49 @@ void UCustomMovement::TickComponent(float DeltaTime, enum ELevelTick TickType, F
 	{
 		return;
 	}
+	//stop that jump.
 	if (EndJump && CanJump()) {
 		GEngine->AddOnScreenDebugMessage(-1, 1 / 60, FColor::Cyan, "End Jump");;
 		JumpVel = FVector(0, 0, 0);
 		EndJump = false;
 		Jumping = false;
 	}
+	//start jump
 	if (!CanJump() && Jumping) {
 		EndJump = true;
 		Jumping = false;
 	}
+	//make sure you movin
 	if (LateralVel.IsNearlyZero()) {
 		LateralVel = FVector::ZeroVector;
 	}
+	//we're going to compare currentlatvel to latvel. even though cross product is right handed, this is just to be safe.
 	CurrentLatVel = LateralVel.GetClampedToMaxSize(MovementSpeed);
 	Walking = CheckGrounded() && !LateralVel.IsNearlyZero();
-	// Get (and then clear) the movement vector that we set in ACollidingPawn::Tick
-	if (LateralVel.RadiansToVector(Pawn->FloorNormal) > 0) {
-
-		FVector IDK = FVector::CrossProduct(LateralVel, Pawn->FloorNormal);
-		LateralVel = FVector::CrossProduct(IDK, Pawn->FloorNormal);
-		if (LateralVel.DistanceInDirection(CurrentLatVel) <= 0) {
-			LateralVel *= -1;
+	// if the current lateral velocity isn't perpendicular to the floor, make it so.
+	if (CurrentLatVel.RadiansToVector(Pawn->FloorNormal) != PI/2) {//FVector::CrossProduct(LateralVel, Pawn->FloorNormal).Size() != LateralVel.Size() * Pawn->FloorNormal.Size()){//
+		FVector IDK = FVector::CrossProduct(CurrentLatVel, Pawn->FloorNormal);
+		CurrentLatVel = FVector::CrossProduct(Pawn->FloorNormal, IDK);
+		if (CurrentLatVel.DistanceInDirection(LateralVel) <= 0) {
+			CurrentLatVel *= -1;
 		}
-
 	}
+	//might put something in here.
 	if (FMath::RadiansToDegrees(Pawn->FloorNormal.RadiansToVector(UpdatedComponent->GetUpVector())) == 90) {
 
 	}
-	FVector DesiredMovementThisFrame = ConsumeInputVector() * DeltaTime;
-	DesiredMovementThisFrame += JumpVel * DeltaTime;
-	AddInputVector(LateralVel.GetClampedToSize(CurrentLatVel.Size(), CurrentLatVel.Size()));
-	LateralVel = FVector(0, 0, 0);
 
 	FHitResult outHit;
+	//keep moving downward.
 	if (CheckGrounded()) {//&& !Jumping
 		float angle = FMath::RadiansToDegrees(Pawn->FloorNormal.RadiansToVector(Capsule->GetUpVector()));
-		//GEngine->AddOnScreenDebugMessage(-1, 1, FColor::Purple, FString::SanitizeFloat(angle));
 		if (angle <= maxAngle || Pawn->ShadowSneak) {
 			Pawn->FloorNormal.Normalize();
 			downVel = -Pawn->FloorNormal * DeltaTime;
 		}
-		GEngine->AddOnScreenDebugMessage(-1, 1, FColor::Purple, Pawn->FloorNormal.ToString());
 	}
 	else {
+		//this is fine cuz if the player is too high it'll switch out of shadowsneak anyway.
 		if (Pawn->ShadowSneak) {
 			downVel += Pawn->FloorNormal * -30 * DeltaTime;
 		}
@@ -92,8 +93,12 @@ void UCustomMovement::TickComponent(float DeltaTime, enum ELevelTick TickType, F
 			downVel += FVector::DownVector * 30 * DeltaTime;
 		}
 	}
-	DesiredMovementThisFrame += downVel;
+	FVector DesiredMovementThisFrame = ConsumeInputVector() * DeltaTime;
+	DesiredMovementThisFrame += JumpVel * DeltaTime;
 	DesiredMovementThisFrame += CurrentLatVel * DeltaTime;
+	LateralVel = FVector(0, 0, 0);
+	DesiredMovementThisFrame += downVel;
+	//DesiredMovementThisFrame += CurrentLatVel * DeltaTime;
 	if (!DesiredMovementThisFrame.IsNearlyZero())
 	{
 		SafeMoveUpdatedComponent(DesiredMovementThisFrame, UpdatedComponent->GetComponentRotation(), true, outHit);
@@ -127,6 +132,7 @@ bool UCustomMovement::CheckGrounded() {
 	return false;
 }
 bool UCustomMovement::CanJump() {
+	//i don't know what the fuck this is here for cuz it's literally the same as checkgrounded. not gonna get rid of it though cuz i don't want this to break.
 	if (Capsule) {
 		FVector Start = Capsule->GetComponentLocation();
 		FVector End = Start - Capsule->GetUpVector() * (Capsule->GetScaledCapsuleHalfHeight() + StepHeight);
