@@ -70,6 +70,21 @@ void APlayerPawn::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	switch (speed) {
+	case MovementSpeeds::Normal:
+		spd = NormalSpeed;
+		break;
+	case MovementSpeeds::Crouching:
+		spd = CrouchSpeed;
+		break;
+	case MovementSpeeds::Sprinting:
+		spd = SprintSpeed;
+		break;
+	case MovementSpeeds::Sneaking:
+		spd = SneakSpeed;
+		break;
+	}
+
 	MovementComp->GroundNum = Grounded;
 	//GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Magenta, FString::SanitizeFloat((float)Grounded));
 	GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Magenta, "Fuck You");
@@ -270,12 +285,12 @@ UPawnMovementComponent* APlayerPawn::GetMovementComponent() const
 }
 void APlayerPawn::MoveForward(float val) {
 	if (MovementComp && MovementComp->UpdatedComponent == RootComponent) {
-		MovementComp->LateralVel += (GetActorForwardVector() * val * MovementComp->MovementSpeed);
+		MovementComp->LateralVel += (GetActorForwardVector() * val * spd);
 	}
 }
 void APlayerPawn::MoveRight(float val) {
 	if (MovementComp && MovementComp->UpdatedComponent == RootComponent) {
-		MovementComp->LateralVel += (GetActorRightVector() * val * MovementComp->MovementSpeed);
+		MovementComp->LateralVel += (GetActorRightVector() * val * spd);
 	}
 }
 void APlayerPawn::TurnAtRate(float rate) {
@@ -472,13 +487,13 @@ void APlayerPawn::RootHit(UPrimitiveComponent* HitComponent, AActor* OtherActor,
 				MovementComp->EndJump = true;
 			}
 		}
-		if ((SweepResult.ImpactPoint - (GetActorLocation() - Capsule->GetUpVector() * Capsule->GetScaledCapsuleHalfHeight_WithoutHemisphere())).DistanceInDirection(-Capsule->GetUpVector())
-			>= FMath::Sin(25 * PI / 180) * Capsule->GetScaledCapsuleRadius()) {
+		if ((-GetActorUpVector()).RadiansToVector(SweepResult.ImpactPoint - GetActorLocation() + GetActorUpVector() * Capsule->GetScaledCapsuleHalfHeight_WithoutHemisphere()) <= MovementComp->maxAngle * PI / 180
+			|| (ShadowSneak && -GetActorUpVector().RadiansToVector(SweepResult.ImpactPoint - GetActorLocation() + GetActorUpVector() * Capsule->GetScaledCapsuleHalfHeight_WithoutHemisphere()) < PI/2)) {
 			//DrawDebugLine(GetWorld(), SweepResult.ImpactPoint + 100 * SweepResult.ImpactNormal, SweepResult.ImpactPoint, FColor::Green, false, 1, 0, 1);
 			Grounded++;
 			FVector ThisNorm = SweepResult.ImpactNormal;
-			if (ThisNorm.RadiansToVector(HitComponent->GetUpVector()) <= FloorAngle && ThisNorm.RadiansToVector(HitComponent->GetUpVector()) < PI/2) {
-				//DrawDebugLine(GetWorld(), SweepResult.ImpactPoint + 100 * SweepResult.ImpactNormal, SweepResult.ImpactPoint, FColor::Red, false, 1, 0, 1);
+			if ((ThisNorm.RadiansToVector(HitComponent->GetUpVector()) <= FloorAngle || ShadowSneak) && ThisNorm.RadiansToVector(HitComponent->GetUpVector()) < PI/2) {
+				DrawDebugLine(GetWorld(), SweepResult.ImpactPoint + 100 * SweepResult.ImpactNormal, SweepResult.ImpactPoint, FColor::Red, false, 1, 0, 1);
 				FloorNormal = ThisNorm;
 				FloorHitPos = SweepResult.ImpactPoint;
 				FloorAngle = ThisNorm.RadiansToVector(-HitComponent->GetUpVector());

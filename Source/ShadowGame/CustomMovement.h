@@ -10,13 +10,13 @@ class SHADOWGAME_API UCustomMovement : public UPawnMovementComponent
 {
 	GENERATED_BODY()
 
-		UPROPERTY(EditAnywhere)
-		float maxAngle = 50;
 	UPROPERTY(EditAnywhere)
 		float JumpSpeed = 800;
 
 
 public:
+	UPROPERTY(EditAnywhere)
+		float maxAngle = 50;
 	virtual void TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 	UPROPERTY(EditAnywhere)
 		float StepHeight;

@@ -61,14 +61,16 @@ void UCustomMovement::TickComponent(float DeltaTime, enum ELevelTick TickType, F
 	}
 	//we're going to compare currentlatvel to latvel. even though cross product is right handed, this is just to be safe.
 	CurrentLatVel = LateralVel.GetClampedToMaxSize(MovementSpeed);
+	GEngine->AddOnScreenDebugMessage(-1, DeltaTime, FColor::Blue, FString::SanitizeFloat(CurrentLatVel.Size()));
 	Walking = CheckGrounded() && !LateralVel.IsNearlyZero();
 	// if the current lateral velocity isn't perpendicular to the floor, make it so.
-	if (CurrentLatVel.RadiansToVector(Pawn->FloorNormal) != PI/2) {//FVector::CrossProduct(LateralVel, Pawn->FloorNormal).Size() != LateralVel.Size() * Pawn->FloorNormal.Size()){//
+	if (CurrentLatVel.RadiansToVector(Pawn->FloorNormal) != PI/2 && Pawn->FloorNormal.RadiansToVector(Pawn->GetActorUpVector()) < PI/2) {//FVector::CrossProduct(LateralVel, Pawn->FloorNormal).Size() != LateralVel.Size() * Pawn->FloorNormal.Size()){//
 		FVector IDK = FVector::CrossProduct(CurrentLatVel, Pawn->FloorNormal);
 		CurrentLatVel = FVector::CrossProduct(Pawn->FloorNormal, IDK);
 		if (CurrentLatVel.DistanceInDirection(LateralVel) <= 0) {
 			CurrentLatVel *= -1;
 		}
+		//DrawDebugLine(GetWorld(), GetActorLocation(), GetActorLocation() + CurrentLatVel, FColor::Red, false, 1, 0, 1);
 	}
 	//might put something in here.
 	if (FMath::RadiansToDegrees(Pawn->FloorNormal.RadiansToVector(UpdatedComponent->GetUpVector())) == 90) {
@@ -79,9 +81,10 @@ void UCustomMovement::TickComponent(float DeltaTime, enum ELevelTick TickType, F
 	//keep moving downward.
 	if (CheckGrounded()) {//&& !Jumping
 		float angle = FMath::RadiansToDegrees(Pawn->FloorNormal.RadiansToVector(Capsule->GetUpVector()));
+		GEngine->AddOnScreenDebugMessage(-1, 1 / 60, FColor::Purple, FString::SanitizeFloat(angle));
 		if (angle <= maxAngle || Pawn->ShadowSneak) {
 			Pawn->FloorNormal.Normalize();
-			downVel = -Pawn->FloorNormal * DeltaTime;
+			downVel = -Pawn->FloorNormal * 30 * DeltaTime;
 		}
 	}
 	else {
